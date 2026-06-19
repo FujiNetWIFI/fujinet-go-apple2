@@ -44,6 +44,13 @@ object EmulatorNative {
     /** Sets an analog axis (0=LX 1=LY 2=RX 3=RY) for [port], value -32768..32767. */
     external fun nativeSetJoystickAxis(port: Int, axis: Int, value: Int)
 
-    /** Fills [out] with interleaved stereo signed-16 samples (44100 Hz). Returns count. */
-    external fun nativeRenderAudio(out: ShortArray): Int
+    /**
+     * Blocks until [out] can be filled with a full block of interleaved stereo
+     * signed-16 samples (44100 Hz), silence-padding on underrun. Returns the
+     * count written (always [out].size).
+     */
+    external fun nativeFillAudio(out: ShortArray): Int
+
+    /** Toggle audio drain; pass false on shutdown to unblock a waiting fill. */
+    external fun nativeAudioSetActive(active: Boolean)
 }

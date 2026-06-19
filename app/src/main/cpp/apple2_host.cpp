@@ -2,6 +2,9 @@
 
 #include <android/log.h>
 
+#include <algorithm>
+#include <chrono>
+#include <condition_variable>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
@@ -29,9 +32,18 @@ int g_width = 560;
 int g_height = 384;
 
 // --- audio ring (interleaved stereo int16 @ 44100) --------------------------
+// The libretro core pushes samples once per ~60Hz frame (producer); the Kotlin
+// audio feeder pulls fixed full blocks (consumer). The consumer blocks on
+// g_audio_cv until a whole block is ready, so it always writes full, real-time-
+// paced blocks to AudioTrack -- no partial/choppy writes -- and degrades to a
+// brief silence pad on underrun instead of stuttering.
 std::mutex g_audio_mutex;
+std::condition_variable g_audio_cv;
 std::vector<int16_t> g_audio;            // FIFO
-constexpr size_t kAudioCapSamples = 44100 * 2;  // ~1s of stereo
+bool g_audio_active = true;
+// ~250ms cap: enough elastic buffer to ride out frame-pacing jitter without
+// unbounded latency growth.
+constexpr size_t kAudioCapSamples = (44100 / 4) * 2;
 
 // --- core options (libretro variables) --------------------------------------
 std::mutex g_var_mutex;
@@ -89,13 +101,18 @@ void RETRO_CALLCONV host_video_refresh(const void* data, unsigned width,
 }
 
 void push_audio(const int16_t* data, size_t count) {
-    std::lock_guard<std::mutex> lock(g_audio_mutex);
-    g_audio.insert(g_audio.end(), data, data + count);
-    if (g_audio.size() > kAudioCapSamples) {
-        // Drop oldest to bound latency if the consumer falls behind.
-        const size_t drop = g_audio.size() - kAudioCapSamples;
-        g_audio.erase(g_audio.begin(), g_audio.begin() + drop);
+    {
+        std::lock_guard<std::mutex> lock(g_audio_mutex);
+        g_audio.insert(g_audio.end(), data, data + count);
+        if (g_audio.size() > kAudioCapSamples) {
+            // Drop oldest in whole stereo frames to bound latency if the consumer
+            // falls behind (keeps L/R alignment, avoids a channel-swap glitch).
+            size_t drop = g_audio.size() - kAudioCapSamples;
+            drop &= ~static_cast<size_t>(1);
+            g_audio.erase(g_audio.begin(), g_audio.begin() + drop);
+        }
     }
+    g_audio_cv.notify_one();
 }
 
 size_t RETRO_CALLCONV host_audio_batch(const int16_t* data, size_t frames) {
@@ -274,21 +291,44 @@ void apple2host_get_geometry(int* width, int* height) {
     if (height) *height = g_height;
 }
 
-int apple2host_read_audio(int16_t* out, int maxSamples) {
+int apple2host_fill_audio(int16_t* out, int maxSamples) {
     if (!out || maxSamples <= 0) return 0;
-    std::lock_guard<std::mutex> lock(g_audio_mutex);
-    const int n = static_cast<int>(std::min<size_t>(g_audio.size(),
-                                                    static_cast<size_t>(maxSamples)));
-    if (n > 0) {
-        std::memcpy(out, g_audio.data(), static_cast<size_t>(n) * sizeof(int16_t));
-        g_audio.erase(g_audio.begin(), g_audio.begin() + n);
+    const size_t want = static_cast<size_t>(maxSamples);
+    std::unique_lock<std::mutex> lock(g_audio_mutex);
+    // Wait for a whole block so the consumer always writes a full, paced buffer.
+    // Bounded wait (~1.5 block-durations at 44100Hz stereo) so a producer stall
+    // degrades to a brief silence pad rather than blocking the audio thread.
+    const auto budget = std::chrono::microseconds(
+        (want * 1'000'000ULL) / (44100ULL * 2ULL) + 8'000ULL);
+    g_audio_cv.wait_for(lock, budget, [&] {
+        return !g_audio_active || g_audio.size() >= want;
+    });
+    const size_t have = std::min(g_audio.size(), want);
+    if (have > 0) {
+        std::memcpy(out, g_audio.data(), have * sizeof(int16_t));
+        g_audio.erase(g_audio.begin(), g_audio.begin() + have);
     }
-    return n;
+    if (have < want) {
+        // Silence-pad the remainder so AudioTrack still gets a full block.
+        std::memset(out + have, 0, (want - have) * sizeof(int16_t));
+    }
+    return static_cast<int>(want);
+}
+
+void apple2host_audio_set_active(int active) {
+    {
+        std::lock_guard<std::mutex> lock(g_audio_mutex);
+        g_audio_active = active != 0;
+    }
+    g_audio_cv.notify_all();  // wake a blocked fill on shutdown
 }
 
 void apple2host_clear_audio(void) {
-    std::lock_guard<std::mutex> lock(g_audio_mutex);
-    g_audio.clear();
+    {
+        std::lock_guard<std::mutex> lock(g_audio_mutex);
+        g_audio.clear();
+    }
+    g_audio_cv.notify_all();
 }
 
 void apple2host_inject_key(int down, unsigned keycode, uint32_t character, uint16_t mods) {

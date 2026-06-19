@@ -43,6 +43,9 @@ class MainActivity : ComponentActivity() {
         }
         enableEdgeToEdge()
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        // Hold clocks steady over a long emulation session (thermals permitting)
+        // rather than letting DVFS oscillate the 60Hz loop off schedule.
+        window.setSustainedPerformanceMode(true)
         session = SessionController.get(applicationContext)
 
         maybeRequestNotificationPermission()

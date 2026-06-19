@@ -4,10 +4,14 @@
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
 
+#include <dlfcn.h>
 #include <pthread.h>
 #include <sys/resource.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
 #include <chrono>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 
@@ -32,10 +36,60 @@ bool        FujiNetAndroid_IsRuntimeRunning();
 
 namespace {
 constexpr auto kFramePeriod = std::chrono::nanoseconds(1'000'000'000 / 60);
+constexpr int64_t kFrameTargetNs = 1'000'000'000LL / 60;
 
 void frame_sink_trampoline(const uint32_t* xrgb, int w, int h, void* ud) {
     static_cast<SessionRuntime*>(ud)->OnFrame(xrgb, w, h);
 }
+
+// ADPF (Android Dynamic Performance Framework) "performance hint" session. This
+// tells the SoC scheduler/governor the emulator thread's per-frame CPU work and
+// its frame deadline, so it keeps clocks up for the 60Hz loop instead of letting
+// DVFS race-to-idle drop the thread off schedule (the root cause of audio
+// underruns / video judder). It is what vendor "game" governors (e.g. MediaTek
+// GameTime, Qualcomm) consume. API 33+; dlsym'd so the app still runs below 33.
+class PerfHint {
+public:
+    void start(int64_t targetNs) {
+        auto getManager = reinterpret_cast<void* (*)()>(
+            dlsym(RTLD_DEFAULT, "APerformanceHint_getManager"));
+        create_ = reinterpret_cast<void* (*)(void*, const int32_t*, size_t, int64_t)>(
+            dlsym(RTLD_DEFAULT, "APerformanceHint_createSession"));
+        report_ = reinterpret_cast<void (*)(void*, int64_t)>(
+            dlsym(RTLD_DEFAULT, "APerformanceHint_reportActualWorkDuration"));
+        close_ = reinterpret_cast<void (*)(void*)>(
+            dlsym(RTLD_DEFAULT, "APerformanceHint_closeSession"));
+        if (!getManager || !create_ || !report_) {
+            LOGW("ADPF unavailable (APerformanceHint symbols missing; pre-API-33)");
+            return;
+        }
+        void* mgr = getManager();
+        if (!mgr) {
+            LOGW("ADPF unavailable (no performance hint manager on this device)");
+            return;
+        }
+        const int32_t tid = static_cast<int32_t>(syscall(SYS_gettid));
+        session_ = create_(mgr, &tid, 1, targetNs);
+        if (session_) {
+            LOGI("ADPF performance hint session active (target %lldns)",
+                 static_cast<long long>(targetNs));
+        } else {
+            LOGW("ADPF createSession returned null");
+        }
+    }
+    void report(int64_t actualNs) const {
+        if (session_ && report_) report_(session_, actualNs);
+    }
+    void stop() {
+        if (session_ && close_) close_(session_);
+        session_ = nullptr;
+    }
+private:
+    void* session_ = nullptr;
+    void* (*create_)(void*, const int32_t*, size_t, int64_t) = nullptr;
+    void (*report_)(void*, int64_t) = nullptr;
+    void (*close_)(void*) = nullptr;
+};
 }  // namespace
 
 SessionRuntime& SessionRuntime::Get() {
@@ -110,9 +164,19 @@ void SessionRuntime::EmulatorThreadMain() {
         return;
     }
 
+    PerfHint perf;
+    perf.start(kFrameTargetNs);
+
     auto next = std::chrono::steady_clock::now();
     while (emu_should_run_.load()) {
+        const auto work_start = std::chrono::steady_clock::now();
         apple2host_core_run_frame();
+        // Report the CPU work this frame actually took (excludes the sleep), so
+        // the governor sizes clocks to the real per-frame load.
+        const auto work_end = std::chrono::steady_clock::now();
+        perf.report(std::chrono::duration_cast<std::chrono::nanoseconds>(
+            work_end - work_start).count());
+
         next += kFramePeriod;
         const auto now = std::chrono::steady_clock::now();
         if (next > now) {
@@ -123,6 +187,7 @@ void SessionRuntime::EmulatorThreadMain() {
         }
     }
 
+    perf.stop();
     apple2host_core_stop();
     running_.store(false);
     LOGI("Emulator thread exited");

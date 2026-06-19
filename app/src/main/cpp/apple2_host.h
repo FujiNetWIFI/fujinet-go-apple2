@@ -34,9 +34,13 @@ void apple2host_get_geometry(int* width, int* height);
 void apple2host_set_variable(const char* key, const char* value);
 
 // --- audio: drained by the JNI audio feeder ---------------------------------
-// Copies up to maxSamples interleaved stereo signed-16 samples (44100 Hz) into
-// out; returns the number of int16 values written.
-int  apple2host_read_audio(int16_t* out, int maxSamples);
+// Blocks (bounded) until maxSamples interleaved stereo signed-16 samples
+// (44100 Hz) are available, then copies a full block into out, silence-padding
+// the remainder on underrun. Always returns maxSamples so the consumer writes a
+// full, real-time-paced AudioTrack block.
+int  apple2host_fill_audio(int16_t* out, int maxSamples);
+// Toggle audio production drain; set 0 on shutdown to unblock a waiting fill.
+void apple2host_audio_set_active(int active);
 void apple2host_clear_audio(void);
 
 // --- input (fed from Kotlin via JNI) ----------------------------------------

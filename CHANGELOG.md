@@ -41,6 +41,20 @@ FujiNet over SmartPort-over-SLIP.
   keep running when backgrounded.
 - Adaptive launcher icon; package `online.fujinet.go.apple2`.
 
+### Performance & audio (set up as a game)
+- Declared a game (`appCategory="game"`, `isGame="true"`) so vendor game
+  optimizers (e.g. Motorola GameTime) engage, plus window sustained-performance
+  mode and `Surface.setFrameRate(60)`.
+- ADPF performance-hint session on the emulator thread (dlsym'd; API 33+),
+  reporting per-frame CPU work so the SoC governor keeps clocks up for the 60Hz
+  loop. Gracefully no-ops where the power HAL lacks hint sessions.
+- Reworked audio for glitch-free output: the native side now hands the
+  AudioTrack feeder *full* blocks via a blocking, silence-padded fill (instead
+  of partial drains), over a ~80ms elastic ring that drops only whole stereo
+  frames on overflow; the feeder uses the low-latency fast path, the game
+  usage/content types, and URGENT_AUDIO priority. Verified with zero underruns
+  on a Motorola razr 2023.
+
 ### Known gaps
 - Apple II system ROMs are embedded (Apple copyright — see COMPLIANCE.md).
 - On-screen joystick/paddle and physical game-controller mapping are not yet

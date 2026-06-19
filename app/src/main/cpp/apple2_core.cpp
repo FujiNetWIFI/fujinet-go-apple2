@@ -77,20 +77,26 @@ Java_online_fujinet_go_apple2_core_EmulatorNative_nativeSetJoystickAxis(
     apple2host_set_joystick_axis(port, axis, static_cast<int16_t>(value));
 }
 
-// Drains up to out.length interleaved stereo signed-16 samples (44100 Hz).
-// Returns the number of samples written.
+// Blocks until out.length interleaved stereo signed-16 samples (44100 Hz) are
+// ready, fills the whole block (silence-padding on underrun), returns the count.
 JNIEXPORT jint JNICALL
-Java_online_fujinet_go_apple2_core_EmulatorNative_nativeRenderAudio(
+Java_online_fujinet_go_apple2_core_EmulatorNative_nativeFillAudio(
         JNIEnv* env, jobject /*thiz*/, jshortArray out) {
     if (out == nullptr) return 0;
     const jsize n = env->GetArrayLength(out);
     if (n <= 0) return 0;
     jshort* buf = env->GetShortArrayElements(out, nullptr);
     if (buf == nullptr) return 0;
-    const int written = apple2host_read_audio(reinterpret_cast<int16_t*>(buf),
+    const int written = apple2host_fill_audio(reinterpret_cast<int16_t*>(buf),
                                               static_cast<int>(n));
     env->ReleaseShortArrayElements(out, buf, 0);
     return written;
+}
+
+JNIEXPORT void JNICALL
+Java_online_fujinet_go_apple2_core_EmulatorNative_nativeAudioSetActive(
+        JNIEnv* /*env*/, jobject /*thiz*/, jboolean active) {
+    apple2host_audio_set_active(active ? 1 : 0);
 }
 
 }  // extern "C"
