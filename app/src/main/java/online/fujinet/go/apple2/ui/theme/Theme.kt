@@ -7,22 +7,22 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// Accent in the spirit of the FujiNet Go family launcher icons (dark-blue
-// background), brightened for legibility on the dark UI.
-private val FujiBlue = Color(0xFF4A86E8)
-private val FujiDark = Color(0xFF0B1326)
-private val FujiPanel = Color(0xFF16233F)
+// Accent derived from the FujiNet Go Apple2 launcher icon's red background
+// (#F44336), with dark warm-neutral surfaces to match.
+private val FujiRed = Color(0xFFF44336)
+private val FujiDark = Color(0xFF160C0B)
+private val FujiPanel = Color(0xFF241413)
 
 private val DarkColors = darkColorScheme(
-    primary = FujiBlue,
+    primary = FujiRed,
     onPrimary = Color.White,
     background = FujiDark,
     surface = FujiPanel,
-    onSurface = Color(0xFFE6E6E6),
+    onSurface = Color(0xFFECE6E5),
 )
 
 private val LightColors = lightColorScheme(
-    primary = FujiBlue,
+    primary = FujiRed,
     onPrimary = Color.White,
 )
 
