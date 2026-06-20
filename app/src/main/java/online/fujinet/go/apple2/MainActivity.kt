@@ -5,6 +5,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.core.content.ContextCompat
 import online.fujinet.go.apple2.fujinet.FujiNetWebViewActivity
+import online.fujinet.go.apple2.input.GameControllerMapper
 import online.fujinet.go.apple2.ui.EmulatorScreen
 import online.fujinet.go.apple2.ui.theme.FujiNetGoApple2Theme
 
@@ -31,6 +34,14 @@ import online.fujinet.go.apple2.ui.theme.FujiNetGoApple2Theme
 class MainActivity : ComponentActivity() {
 
     private lateinit var session: SessionController
+
+    // Routes a Bluetooth/USB game controller to the Apple II paddles + buttons.
+    private val gamepad by lazy {
+        GameControllerMapper(
+            onPaddle = { x, y -> session.paddle(x, y) },
+            onButton = { index, pressed -> session.paddleButton(index, pressed) },
+        )
+    }
 
     private val requestNotifications =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* best effort */ }
@@ -89,6 +100,16 @@ class MainActivity : ComponentActivity() {
         ) {
             requestNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+    }
+
+    override fun onGenericMotionEvent(event: MotionEvent): Boolean {
+        if (::session.isInitialized && gamepad.onMotion(event)) return true
+        return super.onGenericMotionEvent(event)
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (::session.isInitialized && gamepad.onKey(event)) return true
+        return super.dispatchKeyEvent(event)
     }
 
     // No session.stop() here: the foreground service owns the session's lifetime
