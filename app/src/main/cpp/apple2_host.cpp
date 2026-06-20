@@ -256,7 +256,10 @@ bool apple2host_core_start(void) {
     retro_set_input_state(host_input_state);
 
     retro_init();
-    retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
+    // Port 0 as an analog controller so the on-screen stick drives the Apple II
+    // paddles proportionally (Analog::getAxis reads ANALOG_LEFT X/Y). Buttons are
+    // still read as JOYPAD A/B regardless of the port device.
+    retro_set_controller_port_device(0, RETRO_DEVICE_ANALOG);
     retro_set_controller_port_device(1, RETRO_DEVICE_JOYPAD);
 
     if (!retro_load_game(nullptr)) {

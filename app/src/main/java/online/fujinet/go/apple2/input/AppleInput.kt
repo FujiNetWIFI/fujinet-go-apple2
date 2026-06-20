@@ -27,11 +27,15 @@ object Retro {
     const val MOD_SHIFT = 0x01
     const val MOD_CTRL = 0x02
 
-    // Joypad button ids (the Apple II paddle/joystick mapping).
-    const val JOY_B = 0      // paddle button 0 (Open Apple)
-    const val JOY_A = 8      // paddle button 1 (Closed Apple)
-    const val JOY_UP = 4
-    const val JOY_DOWN = 5
-    const val JOY_LEFT = 6
-    const val JOY_RIGHT = 7
+    // Joypad button ids. AppleWin's libretro paddle reads getButton(0)=JOYPAD_A
+    // -> Apple II button 0 (Open Apple / primary fire), getButton(1)=JOYPAD_B
+    // -> Apple II button 1 (Closed Apple / secondary).
+    const val JOY_A = 8      // Apple II button 0 (Open Apple)
+    const val JOY_B = 0      // Apple II button 1 (Closed Apple)
+
+    // Analog axis indices fed to nativeSetJoystickAxis: 0 = paddle 0 (X),
+    // 1 = paddle 1 (Y). Values are -32768..32767.
+    const val AXIS_X = 0
+    const val AXIS_Y = 1
+    const val AXIS_MAX = 32767
 }

@@ -35,10 +35,12 @@ FujiNet over SmartPort-over-SLIP.
 
 ### App (Jetpack Compose)
 - Emulator surface (aspect-correct), an on-screen Apple II keyboard
-  (letters/symbols, Ctrl/Shift, Open/Closed-Apple, arrows, Return/Esc/Del), a
-  control bar (keyboard toggle, Ctrl-Reset, FujiNet WebUI, power), the FujiNet
-  WebUI (WebView → loopback), and a foreground service so the emulator + FujiNet
-  keep running when backgrounded.
+  (letters/symbols, Ctrl/Shift, Open/Closed-Apple, arrows, Return/Esc/Del), an
+  on-screen *analog* joystick + two paddle buttons (Open/Closed Apple) that drive
+  the Apple II paddles (PDL0/PDL1) proportionally via the libretro Analog
+  controller, a control bar (keyboard toggle, joystick toggle, Ctrl-Reset,
+  FujiNet WebUI, power), the FujiNet WebUI (WebView → loopback), and a foreground
+  service so the emulator + FujiNet keep running when backgrounded.
 - Adaptive launcher icon; package `online.fujinet.go.apple2`.
 
 ### Performance & audio (set up as a game)
@@ -57,7 +59,7 @@ FujiNet over SmartPort-over-SLIP.
 
 ### Known gaps
 - Apple II system ROMs are embedded (Apple copyright — see COMPLIANCE.md).
-- On-screen joystick/paddle and physical game-controller mapping are not yet
-  wired (keyboard input only).
+- Physical game-controller (Bluetooth/USB) mapping is not yet wired; the
+  on-screen analog joystick + paddle buttons cover touch input.
 - A machine-type / slot settings dialog is not yet implemented (defaults to the
   Enhanced Apple //e, the standard FujiNet target).

@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import android.view.Surface
 import online.fujinet.go.apple2.core.EmulatorNative
+import online.fujinet.go.apple2.input.Retro
 import kotlin.concurrent.thread
 
 /**
@@ -72,6 +73,25 @@ class SessionController private constructor(private val context: Context) {
 
     fun joypadButton(id: Int, pressed: Boolean, port: Int = 0) =
         EmulatorNative.nativeSetJoystickButton(port, id, pressed)
+
+    /**
+     * Set the Apple II analog paddle position from a normalized stick
+     * (-1..1 each axis; x = paddle 0, y = paddle 1). The core (RETRO_DEVICE_ANALOG
+     * on port 0) maps these proportionally to PDL0/PDL1.
+     */
+    fun paddle(x: Float, y: Float) {
+        EmulatorNative.nativeSetJoystickAxis(0, Retro.AXIS_X, axisValue(x))
+        EmulatorNative.nativeSetJoystickAxis(0, Retro.AXIS_Y, axisValue(y))
+    }
+
+    /** Paddle button: index 0 = Open Apple (button 0), 1 = Closed Apple (button 1). */
+    fun paddleButton(index: Int, pressed: Boolean) {
+        val id = if (index == 0) Retro.JOY_A else Retro.JOY_B
+        EmulatorNative.nativeSetJoystickButton(0, id, pressed)
+    }
+
+    private fun axisValue(v: Float): Int =
+        (v.coerceIn(-1f, 1f) * Retro.AXIS_MAX).toInt()
 
     companion object {
         @Volatile private var instance: SessionController? = null

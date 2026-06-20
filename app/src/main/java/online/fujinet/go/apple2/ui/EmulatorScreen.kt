@@ -33,11 +33,14 @@ fun EmulatorScreen(
     modifier: Modifier = Modifier,
 ) {
     var keyboardVisible by remember { mutableStateOf(true) }
+    var joystickVisible by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize()) {
         ControlBar(
             keyboardVisible = keyboardVisible,
+            joystickVisible = joystickVisible,
             onToggleKeyboard = { keyboardVisible = !keyboardVisible },
+            onToggleJoystick = { joystickVisible = !joystickVisible },
             onReset = session::reset,
             onOpenFujiNet = onOpenFujiNet,
             onShutdown = onShutdown,
@@ -48,6 +51,9 @@ fun EmulatorScreen(
             modifier = Modifier.fillMaxWidth().weight(1f),
         )
 
+        if (joystickVisible) {
+            JoystickView(session = session)
+        }
         if (keyboardVisible) {
             AppleKeyboard(session = session)
         }
@@ -57,7 +63,9 @@ fun EmulatorScreen(
 @Composable
 private fun ControlBar(
     keyboardVisible: Boolean,
+    joystickVisible: Boolean,
     onToggleKeyboard: () -> Unit,
+    onToggleJoystick: () -> Unit,
     onReset: () -> Unit,
     onOpenFujiNet: () -> Unit,
     onShutdown: () -> Unit,
@@ -68,16 +76,26 @@ private fun ControlBar(
             .padding(horizontal = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        BarButton(if (keyboardVisible) "Hide ⌨" else "⌨", Modifier.weight(1f), onToggleKeyboard)
-        BarButton("Reset", Modifier.weight(1f), onReset)
-        BarButton("FujiNet", Modifier.weight(1f), onOpenFujiNet)
-        BarButton("Power", Modifier.weight(1f), onShutdown)
+        BarButton(if (keyboardVisible) "Hide ⌨" else "⌨", Modifier.weight(1f), keyboardVisible, onToggleKeyboard)
+        BarButton(if (joystickVisible) "Hide ✛" else "Joy", Modifier.weight(1f), joystickVisible, onToggleJoystick)
+        BarButton("Reset", Modifier.weight(1f), onClick = onReset)
+        BarButton("FujiNet", Modifier.weight(1f), onClick = onOpenFujiNet)
+        BarButton("Power", Modifier.weight(1f), onClick = onShutdown)
     }
 }
 
 @Composable
-private fun BarButton(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun BarButton(
+    label: String,
+    modifier: Modifier = Modifier,
+    active: Boolean = false,
+    onClick: () -> Unit,
+) {
     TextButton(onClick = onClick, modifier = modifier) {
-        Text(label, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+        Text(
+            label,
+            fontSize = 13.sp,
+            color = if (active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+        )
     }
 }
