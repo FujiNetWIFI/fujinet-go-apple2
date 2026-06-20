@@ -517,6 +517,11 @@ extern "C" bool fujinet_android_start_runtime(
                 stop_log_capture();
                 return;
             }
+            // Publish the runtime root so the flash (SPIFFS) filesystem can root
+            // its "data" dir absolutely. We share the process with the emulator,
+            // which mutates the working directory (AppleWin's SetCurrentImageDir),
+            // so FujiNet's relative "data" path can't be trusted after startup.
+            setenv("FUJINET_RUNTIME_ROOT", runtimeRoot.c_str(), 1);
 
             std::vector<std::string> argsStorage = {
                 "fujinet",
@@ -527,7 +532,7 @@ extern "C" bool fujinet_android_start_runtime(
                 // Web admin UI: bind all interfaces on a fixed port the app's
                 // WebView (FujiNetWebViewActivity) points at on loopback.
                 "-u",
-                "0.0.0.0:65214",
+                "0.0.0.0:8000",
             };
             std::vector<char*> argv;
             argv.reserve(argsStorage.size());

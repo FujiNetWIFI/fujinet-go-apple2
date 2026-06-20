@@ -372,6 +372,29 @@ patch("components_pc/libssh/src/misc.c", [
     ),
 ], required=False)
 
+# --- fnFsSPIFFS: absolute flash "data" root (Android in-process) -----------
+# The flash filesystem (SPIFFS) defaults its base to the relative "data" dir,
+# which only works while the process CWD stays at the runtime root. In the
+# Android app the emulator shares the process and mutates the CWD (AppleWin's
+# SetCurrentImageDir -> chdir), so root "data" absolutely from the
+# FUJINET_RUNTIME_ROOT env var the entry wrapper sets. getenv/strlcat are already
+# available (the file uses free()/strlcpy). Distinct indentation keeps it
+# idempotent.
+patch("lib/FileSystem/fnFsSPIFFS.cpp", [
+    (
+        '    strlcpy(_basepath, "data", sizeof(_basepath));',
+        '    {\n'
+        '        const char *fn_root = getenv("FUJINET_RUNTIME_ROOT");\n'
+        '        if (fn_root && *fn_root) {\n'
+        '            strlcpy(_basepath, fn_root, sizeof(_basepath));\n'
+        '            strlcat(_basepath, "/data", sizeof(_basepath));\n'
+        '        } else {\n'
+        '            strlcpy(_basepath, "data", sizeof(_basepath));\n'
+        '        }\n'
+        '    }',
+    ),
+])
+
 # --- pc_rtos task shim: name worker threads after their FreeRTOS task ------
 # Cosmetic only: names each detached worker so a native tombstone identifies the
 # failing task. fujinet-pc-apple2 may not ship this PC FreeRTOS shim (the APPLE
