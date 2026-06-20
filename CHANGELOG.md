@@ -38,9 +38,10 @@ FujiNet over SmartPort-over-SLIP.
   (letters/symbols, Ctrl/Shift, Open/Closed-Apple, arrows, Return/Esc/Del), an
   on-screen *analog* joystick + two paddle buttons (Open/Closed Apple) that drive
   the Apple II paddles (PDL0/PDL1) proportionally via the libretro Analog
-  controller, a control bar (keyboard toggle, joystick toggle, Ctrl-Reset,
-  FujiNet WebUI, power), the FujiNet WebUI (WebView → loopback), and a foreground
-  service so the emulator + FujiNet keep running when backgrounded.
+  controller, a control bar with mutually-exclusive keyboard/joystick toggles
+  plus Ctrl-Reset, FujiNet WebUI and power, the FujiNet WebUI (WebView →
+  loopback), and a foreground service so the emulator + FujiNet keep running when
+  backgrounded. Open/Closed Apple are shown as □ / ■.
 - Adaptive launcher icon; package `online.fujinet.go.apple2`.
 
 ### Performance & audio (set up as a game)

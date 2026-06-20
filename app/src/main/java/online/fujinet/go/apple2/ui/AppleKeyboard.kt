@@ -97,13 +97,14 @@ fun AppleKeyboard(session: SessionController, modifier: Modifier = Modifier) {
         ) {
             ModKey("CTRL", ctrl, Modifier.weight(1.2f)) { ctrl = !ctrl }
             ModKey("SHIFT", shift, Modifier.weight(1.2f)) { shift = !shift }
-            ModKey("⎇", openApple, Modifier.weight(1f)) {
+            // Open Apple = open (outline) square, Closed/Solid Apple = filled square.
+            ModKey("□", openApple, Modifier.weight(1f)) {
                 openApple = !openApple
                 if (openApple) session.keyDown(Retro.K_LALT, 0, 0) else session.keyUp(Retro.K_LALT, 0, 0)
             }
             TapKey("ESC", Modifier.weight(1f)) { session.tapKey(Retro.K_ESCAPE, 27, 0) }
             TapKey("SPACE", Modifier.weight(3f)) { session.tapKey(Retro.K_SPACE, 32, 0); shift = false; ctrl = false }
-            ModKey("◆", closedApple, Modifier.weight(1f)) {
+            ModKey("■", closedApple, Modifier.weight(1f)) {
                 closedApple = !closedApple
                 if (closedApple) session.keyDown(Retro.K_RALT, 0, 0) else session.keyUp(Retro.K_RALT, 0, 0)
             }

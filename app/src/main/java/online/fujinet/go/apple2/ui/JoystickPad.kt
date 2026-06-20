@@ -146,8 +146,9 @@ fun FireButtons(session: SessionController, modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.Bottom,
     ) {
-        FireButton("⎇", "OA") { down -> session.paddleButton(0, down) }
-        FireButton("◆", "CA") { down -> session.paddleButton(1, down) }
+        // Open Apple = open (outline) square, Closed/Solid Apple = filled square.
+        FireButton("□", "OA") { down -> session.paddleButton(0, down) }
+        FireButton("■", "CA") { down -> session.paddleButton(1, down) }
     }
 }
 

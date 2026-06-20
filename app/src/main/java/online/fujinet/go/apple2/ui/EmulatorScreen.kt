@@ -32,15 +32,20 @@ fun EmulatorScreen(
     onShutdown: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var keyboardVisible by remember { mutableStateOf(true) }
-    var joystickVisible by remember { mutableStateOf(false) }
+    // The keyboard and joystick are mutually exclusive: at most one bottom input
+    // overlay is shown so the emulator surface keeps as much room as possible.
+    var overlay by remember { mutableStateOf(Overlay.KEYBOARD) }
 
     Column(modifier = modifier.fillMaxSize()) {
         ControlBar(
-            keyboardVisible = keyboardVisible,
-            joystickVisible = joystickVisible,
-            onToggleKeyboard = { keyboardVisible = !keyboardVisible },
-            onToggleJoystick = { joystickVisible = !joystickVisible },
+            keyboardActive = overlay == Overlay.KEYBOARD,
+            joystickActive = overlay == Overlay.JOYSTICK,
+            onToggleKeyboard = {
+                overlay = if (overlay == Overlay.KEYBOARD) Overlay.NONE else Overlay.KEYBOARD
+            },
+            onToggleJoystick = {
+                overlay = if (overlay == Overlay.JOYSTICK) Overlay.NONE else Overlay.JOYSTICK
+            },
             onReset = session::reset,
             onOpenFujiNet = onOpenFujiNet,
             onShutdown = onShutdown,
@@ -51,19 +56,20 @@ fun EmulatorScreen(
             modifier = Modifier.fillMaxWidth().weight(1f),
         )
 
-        if (joystickVisible) {
-            JoystickView(session = session)
-        }
-        if (keyboardVisible) {
-            AppleKeyboard(session = session)
+        when (overlay) {
+            Overlay.JOYSTICK -> JoystickView(session = session)
+            Overlay.KEYBOARD -> AppleKeyboard(session = session)
+            Overlay.NONE -> {}
         }
     }
 }
 
+private enum class Overlay { NONE, KEYBOARD, JOYSTICK }
+
 @Composable
 private fun ControlBar(
-    keyboardVisible: Boolean,
-    joystickVisible: Boolean,
+    keyboardActive: Boolean,
+    joystickActive: Boolean,
     onToggleKeyboard: () -> Unit,
     onToggleJoystick: () -> Unit,
     onReset: () -> Unit,
@@ -76,8 +82,8 @@ private fun ControlBar(
             .padding(horizontal = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        BarButton(if (keyboardVisible) "Hide ⌨" else "⌨", Modifier.weight(1f), keyboardVisible, onToggleKeyboard)
-        BarButton(if (joystickVisible) "Hide ✛" else "Joy", Modifier.weight(1f), joystickVisible, onToggleJoystick)
+        BarButton("⌨", Modifier.weight(1f), keyboardActive, onToggleKeyboard)
+        BarButton("Joy", Modifier.weight(1f), joystickActive, onToggleJoystick)
         BarButton("Reset", Modifier.weight(1f), onClick = onReset)
         BarButton("FujiNet", Modifier.weight(1f), onClick = onOpenFujiNet)
         BarButton("Power", Modifier.weight(1f), onClick = onShutdown)
