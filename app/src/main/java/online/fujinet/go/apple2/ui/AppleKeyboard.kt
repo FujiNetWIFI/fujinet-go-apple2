@@ -122,6 +122,14 @@ fun AppleKeyboard(session: SessionController, modifier: Modifier = Modifier) {
             TapKey("↓", Modifier.weight(1f)) { session.tapKey(Retro.K_DOWN, 0, 0) }
             TapKey("↑", Modifier.weight(1f)) { session.tapKey(Retro.K_UP, 0, 0) }
             TapKey("→", Modifier.weight(1f)) { session.tapKey(Retro.K_RIGHT, 0, 0) }
+            // Apple II RESET: like the real machine it only resets together with
+            // Ctrl (Ctrl-RESET). Highlights while Ctrl is held to show it's armed.
+            ModKey("RESET", ctrl, Modifier.weight(1.5f)) {
+                if (ctrl) {
+                    session.reset()
+                    ctrl = false
+                }
+            }
         }
     }
 }

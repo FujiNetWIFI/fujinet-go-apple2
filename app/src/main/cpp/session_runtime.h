@@ -66,6 +66,7 @@ private:
     std::thread emulator_thread_;
     std::atomic<bool> running_{false};
     std::atomic<bool> emu_should_run_{false};
+    std::atomic<bool> reset_requested_{false};
 
     std::string runtime_root_;
     std::string config_path_;

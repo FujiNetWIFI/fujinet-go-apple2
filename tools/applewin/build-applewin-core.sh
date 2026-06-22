@@ -187,6 +187,44 @@ patch("source/frontends/common2/gnuframe.cpp", [
     ),
 ])
 
+# The SmartPort-over-SLIP Listener is a process-global singleton
+# (GetCommandListener) reused across emulator re-inits when the user changes the
+# machine type. Its start() did `listening_thread_ = std::thread(...)`, which
+# std::terminate()s when assigned over a still-joinable thread from the previous
+# init -> SIGABRT on the second machine switch. Make start() tear down any prior
+# listener first, and make stop() join whenever the thread is joinable.
+patch("source/devrelay/service/Listener.cpp", [
+    (
+        "void Listener::start()\n"
+        "{\n"
+        "\tis_listening_ = true;\n",
+        "void Listener::start()\n"
+        "{\n"
+        "\t// [fujinet-go-apple2] The Listener is a process-global singleton reused\n"
+        "\t// across emulator re-inits (machine-type change); tear down any prior\n"
+        "\t// listener thread first so the std::thread move-assign can't terminate.\n"
+        "\tif (is_listening_ || listening_thread_.joinable())\n"
+        "\t{\n"
+        "\t\tstop();\n"
+        "\t}\n"
+        "\tis_listening_ = true;\n",
+    ),
+    (
+        "\tif (is_listening_)\n"
+        "\t{\n"
+        "\t\t// Stop listener first, otherwise the PC might reboot too fast and be picked up\n"
+        "\t\tis_listening_ = false;\n"
+        "\t\tLogFileOutput(\"Listener::stop() ... joining listener until it stops\\n\");\n"
+        "\t\tlistening_thread_.join();",
+        "\tis_listening_ = false;\n"
+        "\tif (listening_thread_.joinable())\n"
+        "\t{\n"
+        "\t\t// Stop listener first, otherwise the PC might reboot too fast and be picked up\n"
+        "\t\tLogFileOutput(\"Listener::stop() ... joining listener until it stops\\n\");\n"
+        "\t\tlistening_thread_.join();",
+    ),
+])
+
 # Build the libretro frontend as a STATIC library so it links whole into the
 # app's single libapple2core.so (the host calls retro_* directly, RetroArch-
 # style indirection is not needed), matching adam's single-native-lib model.

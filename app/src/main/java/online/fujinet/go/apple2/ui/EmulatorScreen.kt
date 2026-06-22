@@ -62,7 +62,6 @@ fun EmulatorScreen(
             onToggleJoystick = {
                 overlay = if (overlay == Overlay.JOYSTICK) Overlay.NONE else Overlay.JOYSTICK
             },
-            onReset = session::reset,
             onSettings = { showSettings = true },
             onOpenFujiNet = onOpenFujiNet,
             onShutdown = onShutdown,
@@ -108,7 +107,6 @@ private fun ControlBar(
     joystickActive: Boolean,
     onToggleKeyboard: () -> Unit,
     onToggleJoystick: () -> Unit,
-    onReset: () -> Unit,
     onSettings: () -> Unit,
     onOpenFujiNet: () -> Unit,
     onShutdown: () -> Unit,
@@ -121,7 +119,6 @@ private fun ControlBar(
     ) {
         BarButton("⌨", Modifier.weight(1f), keyboardActive, onToggleKeyboard)
         BarButton("Joy", Modifier.weight(1f), joystickActive, onToggleJoystick)
-        BarButton("Reset", Modifier.weight(1f), onClick = onReset)
         BarButton("⚙", Modifier.weight(1f), onClick = onSettings)
         BarButton("FujiNet", Modifier.weight(1f), onClick = onOpenFujiNet)
         BarButton("Power", Modifier.weight(1f), onClick = onShutdown)

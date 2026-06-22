@@ -39,7 +39,9 @@ FujiNet over SmartPort-over-SLIP.
   on-screen *analog* joystick + two paddle buttons (Open/Closed Apple) that drive
   the Apple II paddles (PDL0/PDL1) proportionally via the libretro Analog
   controller, a control bar with mutually-exclusive keyboard/joystick toggles
-  plus Ctrl-Reset, FujiNet WebUI and power, the FujiNet WebUI (WebView → the
+  plus settings, FujiNet WebUI and power, a RESET key on the keyboard for the
+  authentic Ctrl-RESET (resets only while Ctrl is held), the FujiNet WebUI
+  (WebView → the
   in-process web admin on loopback 8000, `-u 0.0.0.0:8000`), and a foreground
   service so the emulator + FujiNet keep running when backgrounded. Open/Closed
   Apple are shown as □ / ■.
@@ -47,7 +49,10 @@ FujiNet over SmartPort-over-SLIP.
   Pravets, Base64A, TK3000 …) and the card in each expansion slot (3/4/5/7),
   driven through the libretro core options; applying restarts the session. The
   FujiNet SmartPort-over-SLIP card (defaulted to slot 7) is now labelled just
-  "FujiNet".
+  "FujiNet". Fixed a crash (SIGABRT) when changing the model: the SmartPort
+  Listener is a process-global singleton reused across the core re-init, and its
+  start() move-assigned over a still-joinable std::thread; it now tears the prior
+  listener down first.
 - Physical Bluetooth/USB game-controller support: the left analog stick drives
   the Apple II paddles proportionally (d-pad/hat as full-deflection fallback) and
   the A/B (or X/Y) face buttons map to Apple II buttons 0/1 (Open/Closed Apple).

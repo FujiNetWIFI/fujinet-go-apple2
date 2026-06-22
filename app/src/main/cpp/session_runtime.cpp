@@ -167,6 +167,11 @@ void SessionRuntime::EmulatorThreadMain() {
     auto next = std::chrono::steady_clock::now();
     while (emu_should_run_.load()) {
         const auto work_start = std::chrono::steady_clock::now();
+        // Apply a pending reset on the emulator thread (the core is not
+        // thread-safe; RequestReset is called from the JNI/UI thread).
+        if (reset_requested_.exchange(false)) {
+            apple2host_core_reset();
+        }
         apple2host_core_run_frame();
         // Report the CPU work this frame actually took (excludes the sleep), so
         // the governor sizes clocks to the real per-frame load.
@@ -315,4 +320,4 @@ void SessionRuntime::PresentTo(ANativeWindow* w, const uint32_t* xrgb8888, int w
     ANativeWindow_unlockAndPost(w);
 }
 
-void SessionRuntime::RequestReset() { apple2host_core_reset(); }
+void SessionRuntime::RequestReset() { reset_requested_.store(true); }
