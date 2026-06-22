@@ -10,11 +10,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.PowerSettingsNew
-import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -26,10 +27,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import online.fujinet.go.apple2.R
 import online.fujinet.go.apple2.SessionController
 
 /**
@@ -126,8 +131,29 @@ private fun ControlBar(
         BarButton(Icons.Filled.Keyboard, "Keyboard", Modifier.weight(1f), keyboardActive, onToggleKeyboard)
         BarButton(Icons.Filled.Gamepad, "Joystick", Modifier.weight(1f), joystickActive, onToggleJoystick)
         BarButton(Icons.Filled.Settings, "Settings", Modifier.weight(1f), onClick = onSettings)
-        BarButton(Icons.Filled.Public, "FujiNet web UI", Modifier.weight(1f), onClick = onOpenFujiNet)
+        FujiNetBarButton(Modifier.weight(1f), onClick = onOpenFujiNet)
         BarButton(Icons.Filled.PowerSettingsNew, "Power off", Modifier.weight(1f), onClick = onShutdown)
+    }
+}
+
+/**
+ * The FujiNet web-UI button: the FujiNet "dot" icon, with its white tile tinted
+ * to the UI accent (Modulate keeps the black centre dot black and the corners
+ * transparent, recolouring only the white).
+ */
+@Composable
+private fun FujiNetBarButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
+    TextButton(
+        onClick = onClick,
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+    ) {
+        Image(
+            painter = painterResource(R.drawable.fujinet_toolbar),
+            contentDescription = "FujiNet web UI",
+            modifier = Modifier.size(24.dp),
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary, BlendMode.Modulate),
+        )
     }
 }
 

@@ -39,8 +39,10 @@ FujiNet over SmartPort-over-SLIP.
   on-screen *analog* joystick + two paddle buttons (Open/Closed Apple) that drive
   the Apple II paddles (PDL0/PDL1) proportionally via the libretro Analog
   controller, a control bar of Material icon buttons — mutually-exclusive
-  keyboard/joystick toggles plus settings, FujiNet web UI (globe) and power
-  (active toggles tint to the accent), a RESET key on the keyboard for the
+  keyboard/joystick toggles plus settings, the FujiNet web UI (the FujiNet "dot"
+  logo, its white tinted to the accent via Modulate so the black centre stays)
+  and power (active toggles tint to the accent), a RESET key on the keyboard for
+  the
   authentic Ctrl-RESET (resets only while Ctrl is held), the FujiNet WebUI
   (WebView → the
   in-process web admin on loopback 8000, `-u 0.0.0.0:8000`), and a foreground
