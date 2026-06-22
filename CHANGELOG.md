@@ -43,6 +43,11 @@ FujiNet over SmartPort-over-SLIP.
   in-process web admin on loopback 8000, `-u 0.0.0.0:8000`), and a foreground
   service so the emulator + FujiNet keep running when backgrounded. Open/Closed
   Apple are shown as □ / ■.
+- Settings dialog (⚙): choose the Apple II model (Enhanced //e, ][+, //e,
+  Pravets, Base64A, TK3000 …) and the card in each expansion slot (3/4/5/7),
+  driven through the libretro core options; applying restarts the session. The
+  FujiNet SmartPort-over-SLIP card (defaulted to slot 7) is now labelled just
+  "FujiNet".
 - Physical Bluetooth/USB game-controller support: the left analog stick drives
   the Apple II paddles proportionally (d-pad/hat as full-deflection fallback) and
   the A/B (or X/Y) face buttons map to Apple II buttons 0/1 (Open/Closed Apple).
@@ -73,5 +78,3 @@ FujiNet over SmartPort-over-SLIP.
 
 ### Known gaps
 - Apple II system ROMs are embedded (Apple copyright — see COMPLIANCE.md).
-- A machine-type / slot settings dialog is not yet implemented (defaults to the
-  Enhanced Apple //e, the standard FujiNet target).

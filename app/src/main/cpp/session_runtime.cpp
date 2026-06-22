@@ -120,14 +120,11 @@ void SessionRuntime::StartSession(const std::string& runtime_root,
 
     apple2host_set_frame_sink(&frame_sink_trampoline, this);
 
-    // Place the SmartPort-over-SLIP card (the FujiNet bridge) in Slot 7 via the
-    // libretro core option. Slot 7 is the bootable SmartPort slot the //e
-    // autostart scans before the Disk][ in slot 6, so the FujiNet CONFIG boots
-    // directly. apple2host's SET_VARIABLES handler preserves an override already
-    // present, so setting it before the core starts is honored when the core
-    // reads its variables during retro_load_game. Inserting the card starts
-    // AppleWin's Listener on kSlipPort for FujiNet to connect to.
-    apple2host_set_variable("applewin_slot7", "SmartPort (FujiNet)");
+    // The machine type and slot cards (incl. the FujiNet SmartPort-over-SLIP
+    // card, which starts AppleWin's Listener on kSlipPort) are selected by the
+    // Kotlin layer via nativeSetCoreOption(...) -> apple2host_set_variable before
+    // this call; apple2host's SET_VARIABLES handler preserves those overrides
+    // when the core reads its variables during retro_load_game.
 
     emu_should_run_.store(true);
     running_.store(true);

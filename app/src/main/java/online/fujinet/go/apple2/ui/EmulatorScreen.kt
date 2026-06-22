@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -40,7 +41,16 @@ fun EmulatorScreen(
     // The keyboard and joystick are mutually exclusive: at most one input overlay
     // is shown so the emulator surface keeps as much room as possible.
     var overlay by remember { mutableStateOf(Overlay.KEYBOARD) }
+    var showSettings by remember { mutableStateOf(false) }
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    if (showSettings) {
+        SettingsDialog(
+            config = session.config,
+            onApply = { session.applyConfig(it) },
+            onDismiss = { showSettings = false },
+        )
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         ControlBar(
@@ -53,6 +63,7 @@ fun EmulatorScreen(
                 overlay = if (overlay == Overlay.JOYSTICK) Overlay.NONE else Overlay.JOYSTICK
             },
             onReset = session::reset,
+            onSettings = { showSettings = true },
             onOpenFujiNet = onOpenFujiNet,
             onShutdown = onShutdown,
         )
@@ -98,6 +109,7 @@ private fun ControlBar(
     onToggleKeyboard: () -> Unit,
     onToggleJoystick: () -> Unit,
     onReset: () -> Unit,
+    onSettings: () -> Unit,
     onOpenFujiNet: () -> Unit,
     onShutdown: () -> Unit,
 ) {
@@ -110,6 +122,7 @@ private fun ControlBar(
         BarButton("⌨", Modifier.weight(1f), keyboardActive, onToggleKeyboard)
         BarButton("Joy", Modifier.weight(1f), joystickActive, onToggleJoystick)
         BarButton("Reset", Modifier.weight(1f), onClick = onReset)
+        BarButton("⚙", Modifier.weight(1f), onClick = onSettings)
         BarButton("FujiNet", Modifier.weight(1f), onClick = onOpenFujiNet)
         BarButton("Power", Modifier.weight(1f), onClick = onShutdown)
     }
@@ -122,10 +135,16 @@ private fun BarButton(
     active: Boolean = false,
     onClick: () -> Unit,
 ) {
-    TextButton(onClick = onClick, modifier = modifier) {
+    TextButton(
+        onClick = onClick,
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+    ) {
         Text(
             label,
-            fontSize = 13.sp,
+            fontSize = 12.sp,
+            maxLines = 1,
+            softWrap = false,
             color = if (active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
         )
     }

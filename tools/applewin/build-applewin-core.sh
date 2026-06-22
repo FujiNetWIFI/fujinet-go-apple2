@@ -209,7 +209,7 @@ patch("source/frontends/libretro/retroregistry.cpp", [
         '                    {"SAM/DAC", CT_SAM},\n'
         '                },',
         '                    {"SAM/DAC", CT_SAM},\n'
-        '                    {"SmartPort (FujiNet)", CT_SmartPortOverSlip},\n'
+        '                    {"FujiNet", CT_SmartPortOverSlip},\n'
         '                },',
     ),
     (
@@ -224,7 +224,7 @@ patch("source/frontends/libretro/retroregistry.cpp", [
         '                {\n'
         '                    {"Empty", CT_Empty},\n'
         '                    {"Hard Disk", CT_GenericHDD},\n'
-        '                    {"SmartPort (FujiNet)", CT_SmartPortOverSlip},\n'
+        '                    {"FujiNet", CT_SmartPortOverSlip},\n'
         '                },\n'
         '            },\n'
         '            "Configuration\\\\Slot 7",\n'

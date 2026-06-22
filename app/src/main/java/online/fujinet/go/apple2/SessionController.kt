@@ -19,6 +19,8 @@ import kotlin.concurrent.thread
  */
 class SessionController private constructor(private val context: Context) {
 
+    private val settings = SettingsStore(context)
+
     @Volatile private var started = false
     @Volatile private var paths: RuntimeInstaller.Paths? = null
     private val audio = AudioOutput()
@@ -26,6 +28,9 @@ class SessionController private constructor(private val context: Context) {
 
     /** The FujiNet SD directory (where imported media lands), once staged. */
     val sdPath: String? get() = paths?.sdPath
+
+    /** The current machine/slot configuration. */
+    val config: Apple2Config get() = settings.config
 
     fun startIfNeeded() {
         synchronized(lock) {
@@ -35,9 +40,26 @@ class SessionController private constructor(private val context: Context) {
         thread(name = "apple2-bootstrap") { launch() }
     }
 
+    /** Persist [config] and restart the session so the new machine/slots apply. */
+    fun applyConfig(config: Apple2Config) {
+        settings.config = config
+        thread(name = "apple2-restart") {
+            stopInternal()
+            synchronized(lock) { started = true }
+            launch()
+        }
+    }
+
     private fun launch() {
         try {
             val p = paths ?: RuntimeInstaller(context.applicationContext).install().also { paths = it }
+            // Apply machine + slot core options before the core reads them at load.
+            val c = settings.config
+            EmulatorNative.nativeSetCoreOption("applewin_machine", c.machine)
+            EmulatorNative.nativeSetCoreOption("applewin_slot3", c.slot3)
+            EmulatorNative.nativeSetCoreOption("applewin_slot4", c.slot4)
+            EmulatorNative.nativeSetCoreOption("applewin_slot5", c.slot5)
+            EmulatorNative.nativeSetCoreOption("applewin_slot7", c.slot7)
             EmulatorNative.nativeStartSession(p.runtimeRoot, p.configPath, p.sdPath, p.dataPath)
             audio.start()
         } catch (t: Throwable) {
@@ -46,7 +68,9 @@ class SessionController private constructor(private val context: Context) {
         }
     }
 
-    fun stop() {
+    fun stop() = stopInternal()
+
+    private fun stopInternal() {
         synchronized(lock) { if (!started) return }
         audio.stop()
         EmulatorNative.nativeStopSession()

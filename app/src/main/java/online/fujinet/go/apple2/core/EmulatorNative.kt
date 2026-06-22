@@ -32,6 +32,13 @@ object EmulatorNative {
     external fun nativeRequestReset()
 
     /**
+     * Sets a libretro core-option override (e.g. "applewin_machine",
+     * "applewin_slot7"). Must be set before the session starts; the core reads
+     * options at load, so changing one requires restarting the session.
+     */
+    external fun nativeSetCoreOption(key: String, value: String)
+
+    /**
      * Injects a key event into the emulated Apple II. [keycode] is a libretro
      * RETROK_* value, [character] the ASCII code (or 0), [mods] a RETROKMOD_*
      * bitmask.

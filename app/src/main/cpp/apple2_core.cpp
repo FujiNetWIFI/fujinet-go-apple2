@@ -56,6 +56,14 @@ Java_online_fujinet_go_apple2_core_EmulatorNative_nativeRequestReset(
     SessionRuntime::Get().RequestReset();
 }
 
+// Sets a libretro core-option override (e.g. "applewin_machine",
+// "applewin_slot7") before the session starts; the core reads it at load.
+JNIEXPORT void JNICALL
+Java_online_fujinet_go_apple2_core_EmulatorNative_nativeSetCoreOption(
+        JNIEnv* env, jobject /*thiz*/, jstring key, jstring value) {
+    apple2host_set_variable(JStr(env, key).c_str(), JStr(env, value).c_str());
+}
+
 JNIEXPORT void JNICALL
 Java_online_fujinet_go_apple2_core_EmulatorNative_nativeInjectKey(
         JNIEnv* /*env*/, jobject /*thiz*/,
