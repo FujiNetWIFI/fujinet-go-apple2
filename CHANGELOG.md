@@ -35,7 +35,9 @@ FujiNet over SmartPort-over-SLIP.
 
 ### App (Jetpack Compose)
 - Emulator surface (aspect-correct), an on-screen Apple II keyboard
-  (letters/symbols, Ctrl/Shift, Open/Closed-Apple, arrows, Return/Esc/Del), an
+  (letters/symbols, Ctrl/Shift, Open/Closed-Apple, arrows, Return/Esc/Del) whose
+  keys shrink to a compact height on TV (and other short/landscape screens) so it
+  no longer fills most of the display, an
   on-screen *analog* joystick + two paddle buttons (Open/Closed Apple) that drive
   the Apple II paddles (PDL0/PDL1) proportionally via the libretro Analog
   controller, a control bar of Material icon buttons — mutually-exclusive
