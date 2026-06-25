@@ -169,8 +169,11 @@ void SessionRuntime::EmulatorThreadMain() {
         const auto work_start = std::chrono::steady_clock::now();
         // Apply a pending reset on the emulator thread (the core is not
         // thread-safe; RequestReset is called from the JNI/UI thread).
-        if (reset_requested_.exchange(false)) {
-            apple2host_core_reset();
+        if (const int kind = reset_pending_.exchange(kNoReset)) {
+            if (kind == kColdReset)
+                apple2host_power_cycle();   // Ctrl-OpenApple-Reset: boot
+            else
+                apple2host_ctrl_reset();    // Ctrl-Reset: abort to BASIC
         }
         apple2host_core_run_frame();
         // Report the CPU work this frame actually took (excludes the sleep), so
@@ -320,4 +323,6 @@ void SessionRuntime::PresentTo(ANativeWindow* w, const uint32_t* xrgb8888, int w
     ANativeWindow_unlockAndPost(w);
 }
 
-void SessionRuntime::RequestReset() { reset_requested_.store(true); }
+void SessionRuntime::RequestReset(bool cold) {
+    reset_pending_.store(cold ? kColdReset : kWarmReset);
+}

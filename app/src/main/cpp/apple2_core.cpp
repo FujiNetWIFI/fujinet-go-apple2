@@ -52,8 +52,8 @@ Java_online_fujinet_go_apple2_core_EmulatorNative_nativeDetachSurface(
 
 JNIEXPORT void JNICALL
 Java_online_fujinet_go_apple2_core_EmulatorNative_nativeRequestReset(
-        JNIEnv* /*env*/, jobject /*thiz*/) {
-    SessionRuntime::Get().RequestReset();
+        JNIEnv* /*env*/, jobject /*thiz*/, jboolean cold) {
+    SessionRuntime::Get().RequestReset(cold == JNI_TRUE);
 }
 
 // Sets a libretro core-option override (e.g. "applewin_machine",

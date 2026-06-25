@@ -20,6 +20,14 @@
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
+// AppleWin's two reset entry points (defined in source/Utilities.cpp, statically
+// linked from the core). Forward-declared with C++ linkage rather than via
+// Utilities.h to avoid pulling AppleWin's full header set into this TU.
+//   CtrlReset()         : warm reset  (Ctrl-Reset)
+//   ResetMachineState() : power-cycle (Ctrl-OpenApple-Reset)
+void CtrlReset();
+void ResetMachineState();
+
 namespace {
 
 // --- frame sink -------------------------------------------------------------
@@ -287,7 +295,8 @@ void apple2host_core_stop(void) {
     apple2host_clear_audio();
 }
 
-void apple2host_core_reset(void) { retro_reset(); }
+void apple2host_ctrl_reset(void) { CtrlReset(); }
+void apple2host_power_cycle(void) { ResetMachineState(); }
 
 void apple2host_get_geometry(int* width, int* height) {
     if (width) *width = g_width;

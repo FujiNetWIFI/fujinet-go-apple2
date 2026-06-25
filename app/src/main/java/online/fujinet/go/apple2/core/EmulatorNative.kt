@@ -29,7 +29,8 @@ object EmulatorNative {
     external fun nativeIsRunning(): Boolean
     external fun nativeAttachSurface(surface: Surface)
     external fun nativeDetachSurface()
-    external fun nativeRequestReset()
+    /** Reset the machine: [cold] = power-cycle/boot, else warm Ctrl-Reset to BASIC. */
+    external fun nativeRequestReset(cold: Boolean)
 
     /**
      * Sets a libretro core-option override (e.g. "applewin_machine",

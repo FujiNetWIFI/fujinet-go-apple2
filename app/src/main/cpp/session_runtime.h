@@ -31,7 +31,9 @@ public:
     void AttachSurface(JNIEnv* env, jobject surface);
     void DetachSurface(JNIEnv* env);
 
-    void RequestReset();
+    // Request a reset, applied on the emulator thread before the next frame.
+    // cold=false: warm Ctrl-Reset (abort to BASIC); cold=true: power-cycle (boot).
+    void RequestReset(bool cold);
 
     // Called (on the emulator thread) by the host's video_refresh sink.
     void OnFrame(const uint32_t* xrgb8888, int width, int height);
@@ -66,7 +68,9 @@ private:
     std::thread emulator_thread_;
     std::atomic<bool> running_{false};
     std::atomic<bool> emu_should_run_{false};
-    std::atomic<bool> reset_requested_{false};
+    // Pending reset: 0 = none, 1 = warm (Ctrl-Reset), 2 = cold (power-cycle).
+    enum ResetKind { kNoReset = 0, kWarmReset = 1, kColdReset = 2 };
+    std::atomic<int> reset_pending_{kNoReset};
 
     std::string runtime_root_;
     std::string config_path_;

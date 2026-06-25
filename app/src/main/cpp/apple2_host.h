@@ -24,7 +24,13 @@ void apple2host_set_frame_sink(Apple2FrameSink sink, void* user);
 bool apple2host_core_start(void);
 void apple2host_core_run_frame(void);   // one retro_run() == one ~60Hz frame
 void apple2host_core_stop(void);
-void apple2host_core_reset(void);
+// Reset the emulated machine, mirroring the //e's two reset gestures:
+// . Ctrl-Reset  -> warm reset (6502 reset vector). On a bare machine this drops
+//   to BASIC/monitor without re-booting.
+// . Ctrl-OpenApple-Reset -> power-cycle: re-inits the CPU and re-boots the disk
+//   (and FujiNet) from scratch.
+void apple2host_ctrl_reset(void);    // warm: Ctrl-Reset (abort to BASIC)
+void apple2host_power_cycle(void);   // cold: Ctrl-OpenApple-Reset (boot)
 void apple2host_get_geometry(int* width, int* height);
 
 // Override a libretro core-option variable before the core reads it (used to

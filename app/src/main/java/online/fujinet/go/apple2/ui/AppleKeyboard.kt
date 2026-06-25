@@ -136,11 +136,19 @@ fun AppleKeyboard(session: SessionController, modifier: Modifier = Modifier) {
             KeyButton("↑", Modifier.weight(1f), keyH, font) { session.tapKey(Retro.K_UP, 0, 0) }
             KeyButton("→", Modifier.weight(1f), keyH, font) { session.tapKey(Retro.K_RIGHT, 0, 0) }
             // Apple II RESET: like the real machine it only resets together with
-            // Ctrl (Ctrl-RESET). Highlights while Ctrl is held to show it's armed.
+            // Ctrl. Ctrl-RESET warm-resets to BASIC without booting; adding
+            // Open-Apple (Ctrl-OA-RESET) cold-boots, as on a real //e. Highlights
+            // while Ctrl is held to show it's armed.
             KeyButton("RESET", Modifier.weight(1.5f), keyH, font, ctrl) {
                 if (ctrl) {
-                    session.reset()
+                    session.reset(cold = openApple)
                     ctrl = false
+                    // Release Open-Apple after the boot gesture, mirroring
+                    // letting go of the keys on a real machine.
+                    if (openApple) {
+                        openApple = false
+                        session.keyUp(Retro.K_LALT, 0, 0)
+                    }
                 }
             }
         }

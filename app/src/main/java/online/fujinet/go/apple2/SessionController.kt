@@ -92,8 +92,12 @@ class SessionController private constructor(private val context: Context) {
     fun keyUp(keycode: Int, character: Int, mods: Int) =
         EmulatorNative.nativeInjectKey(false, keycode, character, mods)
 
-    /** Ctrl-Reset (reboot the Apple II). */
-    fun reset() = EmulatorNative.nativeRequestReset()
+    /**
+     * Reset the Apple II. [cold] = power-cycle that re-boots the disk/FujiNet,
+     * like Ctrl-OpenApple-Reset on a real //e; otherwise a warm Ctrl-Reset that
+     * aborts to BASIC without booting.
+     */
+    fun reset(cold: Boolean = false) = EmulatorNative.nativeRequestReset(cold)
 
     fun joypadButton(id: Int, pressed: Boolean, port: Int = 0) =
         EmulatorNative.nativeSetJoystickButton(port, id, pressed)
