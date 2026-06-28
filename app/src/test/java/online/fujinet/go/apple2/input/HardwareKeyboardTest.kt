@@ -38,13 +38,15 @@ class HardwareKeyboardTest {
     }
 
     @Test
-    fun dpadArrowsAreReservedForNavigationNotTyping() {
-        // Arrows must drive on-screen-keyboard focus (TV remote), so they are not in
-        // the typing table; isDpadNavigation() filters them ahead of this lookup.
-        assertNull(specialRetroKeycode(KeyEvent.KEYCODE_DPAD_LEFT))
-        assertNull(specialRetroKeycode(KeyEvent.KEYCODE_DPAD_RIGHT))
-        assertNull(specialRetroKeycode(KeyEvent.KEYCODE_DPAD_UP))
-        assertNull(specialRetroKeycode(KeyEvent.KEYCODE_DPAD_DOWN))
+    fun dpadArrowsMapToRetroArrowsForTyping() {
+        // Arrows typed on a keyboard reach the Apple II (e.g. the FujiNet CONFIG
+        // selection bar). isDpadNavigation() routes a TV remote's D-pad (SOURCE_DPAD)
+        // to focus navigation before this keycode lookup is consulted.
+        assertEquals(Retro.K_LEFT, specialRetroKeycode(KeyEvent.KEYCODE_DPAD_LEFT))
+        assertEquals(Retro.K_RIGHT, specialRetroKeycode(KeyEvent.KEYCODE_DPAD_RIGHT))
+        assertEquals(Retro.K_UP, specialRetroKeycode(KeyEvent.KEYCODE_DPAD_UP))
+        assertEquals(Retro.K_DOWN, specialRetroKeycode(KeyEvent.KEYCODE_DPAD_DOWN))
+        // DPAD_CENTER has no Apple II equivalent and is never forwarded.
         assertNull(specialRetroKeycode(KeyEvent.KEYCODE_DPAD_CENTER))
     }
 }

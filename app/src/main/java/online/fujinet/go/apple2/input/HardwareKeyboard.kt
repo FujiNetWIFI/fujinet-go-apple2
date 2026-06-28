@@ -47,11 +47,11 @@ internal data class Stroke(val keycode: Int, val character: Int, val mods: Int)
  * forward (bare modifiers, volume, function keys, etc.).
  */
 internal fun mapKey(event: KeyEvent): Stroke? {
-    // The D-pad cluster always drives Compose focus navigation of the on-screen
-    // keyboard, never the emulator, so a TV remote keeps working. (Many TV remotes
-    // enumerate as alphabetic keyboards, so we can't tell them apart by device --
-    // the keycode is the reliable signal. To send arrows to the Apple II, use the
-    // on-screen arrow keys.)
+    // A D-pad cluster event drives Compose focus navigation only when it comes from a
+    // real D-pad device (a TV remote / gamepad, marked SOURCE_DPAD); see
+    // isDpadNavigation(). Arrow keys typed on an attached keyboard carry no SOURCE_DPAD,
+    // so they fall through here and reach the Apple II (e.g. to move the FujiNet CONFIG
+    // selection bar).
     if (isDpadNavigation(event)) return null
 
     val mods = (if (event.isShiftPressed) Retro.MOD_SHIFT else 0) or
@@ -85,20 +85,28 @@ internal fun specialRetroKeycode(androidKeyCode: Int): Int? = when (androidKeyCo
     KeyEvent.KEYCODE_FORWARD_DEL -> Retro.K_DELETE
     KeyEvent.KEYCODE_ALT_LEFT -> Retro.K_LALT        // Open Apple
     KeyEvent.KEYCODE_ALT_RIGHT -> Retro.K_RALT       // Closed Apple
-    // D-pad arrows are intentionally absent: see isDpadNavigation().
+    // Arrow keys reach this table only for events isDpadNavigation() let through,
+    // i.e. typed on a keyboard rather than a TV remote / gamepad D-pad. DPAD_CENTER
+    // has no Apple II equivalent, so it is never forwarded.
+    KeyEvent.KEYCODE_DPAD_UP -> Retro.K_UP
+    KeyEvent.KEYCODE_DPAD_DOWN -> Retro.K_DOWN
+    KeyEvent.KEYCODE_DPAD_LEFT -> Retro.K_LEFT
+    KeyEvent.KEYCODE_DPAD_RIGHT -> Retro.K_RIGHT
     else -> null
 }
 
 /**
  * True for the keys that must navigate/activate the on-screen keyboard rather than
- * type into the emulator. The arrows and DPAD_CENTER are always reserved. A remote's
- * "OK" can arrive as ENTER; it carries a D-pad source, whereas a typing keyboard's
- * Enter does not -- so keyboard Enter still reaches the Apple II as RETURN.
+ * type into the emulator. The D-pad cluster (arrows, DPAD_CENTER) and a remote's
+ * "OK"/ENTER are reserved only when they carry a D-pad source -- i.e. they come from a
+ * TV remote or gamepad. A typing keyboard's arrows and Enter carry no SOURCE_DPAD, so
+ * they fall through and reach the Apple II (arrows as RETROK arrows, Enter as RETURN)
+ * -- e.g. to drive the FujiNet CONFIG selection bar.
  */
 private fun isDpadNavigation(event: KeyEvent): Boolean = when (event.keyCode) {
     KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN,
     KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT,
-    KeyEvent.KEYCODE_DPAD_CENTER -> true
+    KeyEvent.KEYCODE_DPAD_CENTER,
     KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER ->
         event.source and InputDevice.SOURCE_DPAD == InputDevice.SOURCE_DPAD
     else -> false
