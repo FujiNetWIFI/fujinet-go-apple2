@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.core.content.ContextCompat
 import online.fujinet.go.apple2.fujinet.FujiNetWebViewActivity
 import online.fujinet.go.apple2.input.GameControllerMapper
+import online.fujinet.go.apple2.input.HardwareKeyboard
 import online.fujinet.go.apple2.ui.EmulatorScreen
 import online.fujinet.go.apple2.ui.theme.FujiNetGoApple2Theme
 
@@ -40,6 +41,14 @@ class MainActivity : ComponentActivity() {
         GameControllerMapper(
             onPaddle = { x, y -> session.paddle(x, y) },
             onButton = { index, pressed -> session.paddleButton(index, pressed) },
+        )
+    }
+
+    // Routes an attached hardware keyboard to the Apple II keyboard.
+    private val keyboard by lazy {
+        HardwareKeyboard(
+            onDown = { code, ch, mods -> session.keyDown(code, ch, mods) },
+            onUp = { code, ch, mods -> session.keyUp(code, ch, mods) },
         )
     }
 
@@ -108,7 +117,12 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (::session.isInitialized && gamepad.onKey(event)) return true
+        if (::session.isInitialized) {
+            // Game controller first, then a hardware keyboard. A TV remote's D-pad is
+            // claimed by neither, so it falls through to Compose focus navigation.
+            if (gamepad.onKey(event)) return true
+            if (keyboard.onKey(event)) return true
+        }
         return super.dispatchKeyEvent(event)
     }
 

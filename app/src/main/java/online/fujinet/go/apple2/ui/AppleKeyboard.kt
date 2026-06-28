@@ -2,7 +2,10 @@ package online.fujinet.go.apple2.ui
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -164,10 +168,17 @@ private fun KeyRow(keys: List<Key>, shift: Boolean, keyH: Dp, font: TextUnit, ga
     }
 }
 
+// Bright highlight for the D-pad / TV-remote focused key.
+private val FocusAmber = Color(0xFFFFC107)
+
 /**
  * A keyboard key. A height-controlled Box (not a Material Button, whose 40dp
  * minimum height blocks the compact TV layout). Active modifier keys invert to
  * make their sticky state obvious.
+ *
+ * On a TV the keys are driven by the remote's D-pad, so the focused key must read
+ * clearly from across the room: it flips to a bright amber fill with a thick white
+ * outline. (The platform's default focus tint is far too subtle on the red keys.)
  */
 @Composable
 private fun KeyButton(
@@ -178,14 +189,26 @@ private fun KeyButton(
     active: Boolean = false,
     onClick: () -> Unit,
 ) {
-    val container = if (active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
-    val content = if (active) MaterialTheme.colorScheme.primary else Color.White
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    val shape = RoundedCornerShape(6.dp)
+    val container = when {
+        focused -> FocusAmber
+        active -> MaterialTheme.colorScheme.onPrimary
+        else -> MaterialTheme.colorScheme.primary
+    }
+    val content = when {
+        focused -> Color.Black
+        active -> MaterialTheme.colorScheme.primary
+        else -> Color.White
+    }
     Box(
         modifier = modifier
             .height(keyH)
-            .clip(RoundedCornerShape(6.dp))
+            .clip(shape)
             .background(container)
-            .clickable(onClick = onClick),
+            .then(if (focused) Modifier.border(3.dp, Color.White, shape) else Modifier)
+            .clickable(interactionSource = interaction, indication = ripple(), onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(label, fontSize = font, color = content, textAlign = TextAlign.Center, maxLines = 1)
