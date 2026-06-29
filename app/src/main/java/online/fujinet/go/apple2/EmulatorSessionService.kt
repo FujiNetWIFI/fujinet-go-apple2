@@ -42,6 +42,16 @@ class EmulatorSessionService : Service() {
             SessionController.get(applicationContext).stop()
             ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
             stopSelf()
+            // The AppleWin core keeps the emulated machine (RAM/CPU) and other
+            // libretro state in C++ globals that retro_deinit/retro_init don't
+            // reset, so it can't be re-initialised cleanly in this process: a
+            // relaunch would resume the old machine (stale screen, no cold boot)
+            // and could key through a stale core callback (crash). "Power off"
+            // therefore ends the process so the next launch cold-boots into
+            // FujiNet CONFIG in a pristine process. Killing our own pid is safe
+            // here: stopSelf() above + START_NOT_STICKY mean the system won't
+            // resurrect the (now stopped) foreground service.
+            android.os.Process.killProcess(android.os.Process.myPid())
             return START_NOT_STICKY
         }
         return START_STICKY

@@ -292,6 +292,15 @@ void apple2host_core_run_frame(void) { retro_run(); }
 void apple2host_core_stop(void) {
     retro_unload_game();
     retro_deinit();
+    // Drop the core's keyboard callback: it points into core state that
+    // retro_deinit has just torn down, so a key injected before the next
+    // core_start re-registers it would jump through a stale pointer. Cleared
+    // here, apple2host_inject_key's null-guard makes such a key a safe no-op.
+    g_keyboard_cb = nullptr;
+    // Release any held buttons/axes so a restarted session doesn't inherit a
+    // stuck input from the previous one.
+    std::memset(g_buttons, 0, sizeof(g_buttons));
+    std::memset(g_axes, 0, sizeof(g_axes));
     apple2host_clear_audio();
 }
 
