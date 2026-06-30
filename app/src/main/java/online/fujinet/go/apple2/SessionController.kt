@@ -32,6 +32,15 @@ class SessionController private constructor(private val context: Context) {
     /** The current machine/slot configuration. */
     val config: Apple2Config get() = settings.config
 
+    /** Live haptic-feedback toggles (persisted; no session restart). */
+    var keyboardHapticsEnabled: Boolean
+        get() = settings.keyboardHapticsEnabled
+        set(value) { settings.keyboardHapticsEnabled = value }
+
+    var joystickHapticsEnabled: Boolean
+        get() = settings.joystickHapticsEnabled
+        set(value) { settings.joystickHapticsEnabled = value }
+
     fun startIfNeeded() {
         synchronized(lock) {
             if (started) return

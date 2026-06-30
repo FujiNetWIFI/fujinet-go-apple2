@@ -14,6 +14,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,7 +42,11 @@ import online.fujinet.go.apple2.SLOT7_CARDS
 @Composable
 fun SettingsDialog(
     config: Apple2Config,
+    keyboardHaptics: Boolean,
+    joystickHaptics: Boolean,
     onApply: (Apple2Config) -> Unit,
+    onKeyboardHapticsChange: (Boolean) -> Unit,
+    onJoystickHapticsChange: (Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var draft by remember { mutableStateOf(config) }
@@ -67,9 +72,32 @@ fun SettingsDialog(
                 OptionRow("Slot 4", SLOT4_CARDS, draft.slot4) { draft = draft.copy(slot4 = it) }
                 OptionRow("Slot 5", SLOT5_CARDS, draft.slot5) { draft = draft.copy(slot5 = it) }
                 OptionRow("Slot 7", SLOT7_CARDS, draft.slot7) { draft = draft.copy(slot7 = it) }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                Text("Haptics", style = MaterialTheme.typography.titleSmall)
+                // Haptics apply live (no session restart), so they call back immediately
+                // rather than going through the draft/Apply path the machine options use.
+                ToggleRow("Keyboard haptics", keyboardHaptics, onKeyboardHapticsChange)
+                ToggleRow("Joystick haptics", joystickHaptics, onJoystickHapticsChange)
             }
         },
     )
+}
+
+@Composable
+private fun ToggleRow(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
 }
 
 @Composable

@@ -53,12 +53,18 @@ fun EmulatorScreen(
     // is shown so the emulator surface keeps as much room as possible.
     var overlay by remember { mutableStateOf(Overlay.KEYBOARD) }
     var showSettings by remember { mutableStateOf(false) }
+    var keyboardHaptics by remember { mutableStateOf(session.keyboardHapticsEnabled) }
+    var joystickHaptics by remember { mutableStateOf(session.joystickHapticsEnabled) }
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     if (showSettings) {
         SettingsDialog(
             config = session.config,
+            keyboardHaptics = keyboardHaptics,
+            joystickHaptics = joystickHaptics,
             onApply = { session.applyConfig(it) },
+            onKeyboardHapticsChange = { keyboardHaptics = it; session.keyboardHapticsEnabled = it },
+            onJoystickHapticsChange = { joystickHaptics = it; session.joystickHapticsEnabled = it },
             onDismiss = { showSettings = false },
         )
     }
@@ -85,6 +91,7 @@ fun EmulatorScreen(
                 JoystickPad(
                     onAxis = { x, y -> session.paddle(x, y) },
                     modifier = Modifier.align(Alignment.CenterVertically).padding(horizontal = 12.dp),
+                    hapticsEnabled = joystickHaptics,
                 )
                 EmulatorSurface(
                     session = session,
@@ -93,6 +100,7 @@ fun EmulatorScreen(
                 FireButtons(
                     session,
                     modifier = Modifier.align(Alignment.CenterVertically).padding(horizontal = 12.dp),
+                    hapticsEnabled = joystickHaptics,
                 )
             }
         } else {
@@ -102,8 +110,8 @@ fun EmulatorScreen(
                 EmulatorSurface(session = session, modifier = Modifier.fillMaxSize())
             }
             when (overlay) {
-                Overlay.KEYBOARD -> AppleKeyboard(session = session)
-                Overlay.JOYSTICK -> JoystickView(session = session)
+                Overlay.KEYBOARD -> AppleKeyboard(session = session, hapticsEnabled = keyboardHaptics)
+                Overlay.JOYSTICK -> JoystickView(session = session, hapticsEnabled = joystickHaptics)
                 Overlay.NONE -> {}
             }
         }

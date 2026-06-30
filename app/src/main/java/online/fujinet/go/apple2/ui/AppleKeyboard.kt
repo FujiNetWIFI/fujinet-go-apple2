@@ -18,10 +18,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,7 +81,7 @@ private val ROW4 = "zxcvbnm".map { letter(it) } +
  * so the keyboard doesn't eat most of the display.
  */
 @Composable
-fun AppleKeyboard(session: SessionController, modifier: Modifier = Modifier) {
+fun AppleKeyboard(session: SessionController, modifier: Modifier = Modifier, hapticsEnabled: Boolean = true) {
     var shift by remember { mutableStateOf(false) }
     var ctrl by remember { mutableStateOf(false) }
     var openApple by remember { mutableStateOf(false) }
@@ -91,6 +93,9 @@ fun AppleKeyboard(session: SessionController, modifier: Modifier = Modifier) {
     val keyH: Dp = if (compact) 28.dp else 46.dp
     val font: TextUnit = if (compact) 11.sp else 13.sp
     val gap = if (compact) 1.dp else 2.dp
+
+    val emitHaptic = rememberFujiHaptic(FujiHapticPattern.KeyPress)
+    val onHaptic = { if (hapticsEnabled) emitHaptic() }
 
     fun emit(code: Int, ascii: Int, shiftAscii: Int) {
         val mods = (if (shift) Retro.MOD_SHIFT else 0) or (if (ctrl) Retro.MOD_CTRL else 0)
@@ -104,6 +109,10 @@ fun AppleKeyboard(session: SessionController, modifier: Modifier = Modifier) {
         ctrl = false
     }
 
+    // Every keycap routes its tap through KeyButton; rather than thread an onHaptic
+    // through all ~13 call sites, expose the gated pulse via a CompositionLocal that
+    // KeyButton reads and fires on click.
+    CompositionLocalProvider(LocalKeyHaptic provides onHaptic) {
     Column(
         modifier = modifier.fillMaxWidth().padding(gap),
         verticalArrangement = Arrangement.spacedBy(gap),
@@ -157,7 +166,11 @@ fun AppleKeyboard(session: SessionController, modifier: Modifier = Modifier) {
             }
         }
     }
+    }
 }
+
+/** The gated key-press haptic pulse, supplied by [AppleKeyboard] and fired by each [KeyButton]. */
+private val LocalKeyHaptic = staticCompositionLocalOf<() -> Unit> { {} }
 
 @Composable
 private fun KeyRow(keys: List<Key>, shift: Boolean, keyH: Dp, font: TextUnit, gap: Dp, onKey: (Key) -> Unit) {
@@ -192,6 +205,7 @@ private fun KeyButton(
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     val shape = RoundedCornerShape(6.dp)
+    val haptic = LocalKeyHaptic.current
     val container = when {
         focused -> FocusAmber
         active -> MaterialTheme.colorScheme.onPrimary
@@ -208,7 +222,7 @@ private fun KeyButton(
             .clip(shape)
             .background(container)
             .then(if (focused) Modifier.border(3.dp, Color.White, shape) else Modifier)
-            .clickable(interactionSource = interaction, indication = ripple(), onClick = onClick),
+            .clickable(interactionSource = interaction, indication = ripple()) { haptic(); onClick() },
         contentAlignment = Alignment.Center,
     ) {
         Text(label, fontSize = font, color = content, textAlign = TextAlign.Center, maxLines = 1)

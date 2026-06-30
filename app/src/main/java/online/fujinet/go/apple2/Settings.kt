@@ -40,6 +40,18 @@ val SLOT7_CARDS = listOf("Empty", "Hard Disk", "FujiNet")
 class SettingsStore(context: Context) {
     private val prefs = context.getSharedPreferences("fujiapple2", Context.MODE_PRIVATE)
 
+    /**
+     * Haptic feedback toggles. Kept out of [Apple2Config] (and its Apply→restart
+     * path) so flipping them takes effect live, without restarting the emulator.
+     */
+    var keyboardHapticsEnabled: Boolean
+        get() = prefs.getBoolean(KEY_KEYBOARD_HAPTICS, true)
+        set(value) { prefs.edit().putBoolean(KEY_KEYBOARD_HAPTICS, value).apply() }
+
+    var joystickHapticsEnabled: Boolean
+        get() = prefs.getBoolean(KEY_JOYSTICK_HAPTICS, true)
+        set(value) { prefs.edit().putBoolean(KEY_JOYSTICK_HAPTICS, value).apply() }
+
     var config: Apple2Config
         get() = Apple2Config(
             machine = prefs.getString(KEY_MACHINE, null)?.takeIf { it in MACHINES } ?: MACHINES[0],
@@ -64,5 +76,7 @@ class SettingsStore(context: Context) {
         const val KEY_SLOT4 = "slot4"
         const val KEY_SLOT5 = "slot5"
         const val KEY_SLOT7 = "slot7"
+        const val KEY_KEYBOARD_HAPTICS = "keyboardHaptics"
+        const val KEY_JOYSTICK_HAPTICS = "joystickHaptics"
     }
 }
