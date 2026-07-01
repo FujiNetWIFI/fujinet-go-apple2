@@ -273,6 +273,24 @@ patch("source/frontends/libretro/retroregistry.cpp", [
         '                "video_mode",',
     ),
 ])
+
+# Fix a sample-doubling bug in the libretro speaker mixer. When a generator's
+# ring-buffer Read wraps it returns two segments; writeAudio mixes them with two
+# mixBuffer() calls, but ptr is passed by value so the second (wrapped) segment
+# is written back at buffer.data() instead of after the first. Since mixBuffer
+# does *ptr += ..., the segments sum on top of each other every ring wrap
+# (~16384 frames), doubling samples -- an audible ~2.7Hz "gallop" click over any
+# tone. Offset the second segment by the first's length. (Upstream libretro-
+# AppleWin bug; remove this patch once fixed there.)
+patch("source/frontends/libretro/rdirectsound.cpp", [
+    (
+        "                mixBuffer(generator, lpvAudioPtr1, dwAudioBytes1, ptr);\n"
+        "                mixBuffer(generator, lpvAudioPtr2, dwAudioBytes2, ptr);",
+        "                mixBuffer(generator, lpvAudioPtr1, dwAudioBytes1, ptr);\n"
+        "                mixBuffer(generator, lpvAudioPtr2, dwAudioBytes2,\n"
+        "                          ptr + dwAudioBytes1 / sizeof(int16_t));",
+    ),
+])
 PY
 
 cat > "${STAMP_PATH}" <<EOF

@@ -138,8 +138,8 @@ private fun ControlBar(
     ) {
         BarButton(Icons.Filled.Keyboard, "Keyboard", Modifier.weight(1f), keyboardActive, onToggleKeyboard)
         BarButton(Icons.Filled.Gamepad, "Joystick", Modifier.weight(1f), joystickActive, onToggleJoystick)
-        BarButton(Icons.Filled.Settings, "Settings", Modifier.weight(1f), onClick = onSettings)
         FujiNetBarButton(Modifier.weight(1f), onClick = onOpenFujiNet)
+        BarButton(Icons.Filled.Settings, "Settings", Modifier.weight(1f), onClick = onSettings)
         BarButton(Icons.Filled.PowerSettingsNew, "Power off", Modifier.weight(1f), onClick = onShutdown)
     }
 }

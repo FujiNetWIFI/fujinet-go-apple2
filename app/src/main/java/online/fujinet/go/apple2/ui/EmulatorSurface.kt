@@ -5,13 +5,17 @@ import android.os.Build
 import android.view.Surface
 import android.view.TextureView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.viewinterop.AndroidView
 import online.fujinet.go.apple2.SessionController
@@ -46,10 +50,34 @@ fun EmulatorSurface(
         modifier = modifier.background(Color.Black),
         contentAlignment = Alignment.Center,
     ) {
-        val surfaceModifier = if (maxWidth / maxHeight > FRAME_RATIO) {
+        val pillarboxed = maxWidth / maxHeight > FRAME_RATIO
+        val surfaceModifier = if (pillarboxed) {
             Modifier.fillMaxHeight().aspectRatio(FRAME_RATIO)
         } else {
             Modifier.fillMaxWidth().aspectRatio(FRAME_RATIO)
+        }
+
+        // Landscape / TV: the frame is pillar-boxed, leaving black bars either side.
+        // Fill them with a fade from a dim tint of the UI accent at the picture edge
+        // out to black at the screen edge -- a subtle ambient glow, not a vivid band.
+        // Drawn before the surface so the picture always wins any sub-pixel overlap.
+        if (pillarboxed) {
+            val accent = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+            val barWidth = (maxWidth - maxHeight * FRAME_RATIO) / 2
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .fillMaxHeight()
+                    .width(barWidth)
+                    .background(Brush.horizontalGradient(listOf(Color.Black, accent))),
+            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight()
+                    .width(barWidth)
+                    .background(Brush.horizontalGradient(listOf(accent, Color.Black))),
+            )
         }
 
         AndroidView(
