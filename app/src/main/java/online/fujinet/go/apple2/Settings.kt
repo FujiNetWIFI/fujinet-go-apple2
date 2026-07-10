@@ -52,6 +52,15 @@ class SettingsStore(context: Context) {
         get() = prefs.getBoolean(KEY_JOYSTICK_HAPTICS, true)
         set(value) { prefs.edit().putBoolean(KEY_JOYSTICK_HAPTICS, value).apply() }
 
+    /**
+     * Digital joystick mode: any tap inside the pad snaps the stick to the
+     * extreme in that direction (8-way) instead of reporting an analog position.
+     * Toggled live from the joystick overlay; persisted like the haptics flags.
+     */
+    var joystickDigitalEnabled: Boolean
+        get() = prefs.getBoolean(KEY_JOYSTICK_DIGITAL, false)
+        set(value) { prefs.edit().putBoolean(KEY_JOYSTICK_DIGITAL, value).apply() }
+
     var config: Apple2Config
         get() = Apple2Config(
             machine = prefs.getString(KEY_MACHINE, null)?.takeIf { it in MACHINES } ?: MACHINES[0],
@@ -78,5 +87,6 @@ class SettingsStore(context: Context) {
         const val KEY_SLOT7 = "slot7"
         const val KEY_KEYBOARD_HAPTICS = "keyboardHaptics"
         const val KEY_JOYSTICK_HAPTICS = "joystickHaptics"
+        const val KEY_JOYSTICK_DIGITAL = "joystickDigital"
     }
 }

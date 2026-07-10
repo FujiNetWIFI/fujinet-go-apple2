@@ -4,13 +4,16 @@ import android.graphics.PointF
 import android.view.MotionEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -39,6 +42,7 @@ import online.fujinet.go.apple2.SessionController
 import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.roundToInt
+import kotlin.math.sign
 
 /**
  * The Apple II analog joystick view: a thumb-stick plus the two paddle buttons
@@ -47,15 +51,59 @@ import kotlin.math.roundToInt
  * its position drives the Apple II paddles (PDL0/PDL1) proportionally.
  */
 @Composable
-fun JoystickView(session: SessionController, modifier: Modifier = Modifier, hapticsEnabled: Boolean = true) {
+fun JoystickView(
+    session: SessionController,
+    modifier: Modifier = Modifier,
+    hapticsEnabled: Boolean = true,
+    digital: Boolean = false,
+    onDigitalChange: (Boolean) -> Unit = {},
+) {
     Row(
         modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        JoystickPad(onAxis = { x, y -> session.paddle(x, y) }, hapticsEnabled = hapticsEnabled)
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            JoystickModeToggle(digital = digital, onModeChange = onDigitalChange)
+            Spacer(Modifier.height(8.dp))
+            JoystickPad(onAxis = { x, y -> session.paddle(x, y) }, hapticsEnabled = hapticsEnabled, digital = digital)
+        }
         FireButtons(session, hapticsEnabled = hapticsEnabled)
     }
+}
+
+/**
+ * A compact segmented pill that flips the stick between analog (proportional
+ * position) and digital (any tap snaps to the extreme in that 8-way direction).
+ * Placed above the pad in the joystick overlay.
+ */
+@Composable
+fun JoystickModeToggle(
+    digital: Boolean,
+    onModeChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .clip(CircleShape)
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), CircleShape),
+    ) {
+        ModeSegment("Analog", selected = !digital) { onModeChange(false) }
+        ModeSegment("Digital", selected = digital) { onModeChange(true) }
+    }
+}
+
+@Composable
+private fun ModeSegment(label: String, selected: Boolean, onClick: () -> Unit) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelMedium,
+        color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+    )
 }
 
 /**
@@ -70,6 +118,7 @@ fun JoystickPad(
     modifier: Modifier = Modifier,
     size: Dp = 150.dp,
     hapticsEnabled: Boolean = true,
+    digital: Boolean = false,
 ) {
     var padSize by remember { mutableStateOf(IntSize.Zero) }
     var nub by remember { mutableStateOf(PointF(0f, 0f)) }
@@ -87,8 +136,8 @@ fun JoystickPad(
     }
 
     fun apply(px: Float, py: Float) {
-        val ax = axis(px, padSize.width)
-        val ay = axis(py, padSize.height)
+        val ax = axis(px, padSize.width, digital)
+        val ay = axis(py, padSize.height, digital)
         nub = PointF(ax, ay)
         val dir = directionCode(ax, ay)
         if (hapticsEnabled && dir != 0 && dir != lastDir[0]) emit()
@@ -210,12 +259,17 @@ private const val DEADZONE = 0.12f
 // Higher than DEADZONE so a tick fires only on a deliberate push, not tiny drift.
 private const val DIR_THRESHOLD = 0.5f
 
-/** Normalize a touch coordinate within [extent] to -1..1 with a centre deadzone. */
-private fun axis(value: Float, extent: Int): Float {
+/**
+ * Normalize a touch coordinate within [extent] to -1..1 with a centre deadzone.
+ * In [digital] mode a touch past the deadzone snaps to the extreme (±1) so any
+ * tap pushes the stick fully in that direction; otherwise it is proportional.
+ */
+private fun axis(value: Float, extent: Int, digital: Boolean): Float {
     if (extent == 0) return 0f
     val half = extent / 2f
     val n = ((value - half) / half).coerceIn(-1f, 1f)
-    return if (abs(n) < DEADZONE) 0f else n
+    if (abs(n) < DEADZONE) return 0f
+    return if (digital) sign(n) else n
 }
 
 /** A 4-bit up/down/left/right code for the stick's current 8-way zone (0 = centred). */

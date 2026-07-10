@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.Image
@@ -55,6 +56,8 @@ fun EmulatorScreen(
     var showSettings by remember { mutableStateOf(false) }
     var keyboardHaptics by remember { mutableStateOf(session.keyboardHapticsEnabled) }
     var joystickHaptics by remember { mutableStateOf(session.joystickHapticsEnabled) }
+    var joystickDigital by remember { mutableStateOf(session.joystickDigitalEnabled) }
+    val onJoystickDigitalChange: (Boolean) -> Unit = { joystickDigital = it; session.joystickDigitalEnabled = it }
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     if (showSettings) {
@@ -88,11 +91,18 @@ fun EmulatorScreen(
             // Landscape: flank the screen with the stick (left) and paddle buttons
             // (right) so the surface fills the full height between them.
             Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                JoystickPad(
-                    onAxis = { x, y -> session.paddle(x, y) },
+                Column(
                     modifier = Modifier.align(Alignment.CenterVertically).padding(horizontal = 12.dp),
-                    hapticsEnabled = joystickHaptics,
-                )
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    JoystickModeToggle(digital = joystickDigital, onModeChange = onJoystickDigitalChange)
+                    Spacer(Modifier.size(8.dp))
+                    JoystickPad(
+                        onAxis = { x, y -> session.paddle(x, y) },
+                        hapticsEnabled = joystickHaptics,
+                        digital = joystickDigital,
+                    )
+                }
                 EmulatorSurface(
                     session = session,
                     modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -111,7 +121,12 @@ fun EmulatorScreen(
             }
             when (overlay) {
                 Overlay.KEYBOARD -> AppleKeyboard(session = session, hapticsEnabled = keyboardHaptics)
-                Overlay.JOYSTICK -> JoystickView(session = session, hapticsEnabled = joystickHaptics)
+                Overlay.JOYSTICK -> JoystickView(
+                    session = session,
+                    hapticsEnabled = joystickHaptics,
+                    digital = joystickDigital,
+                    onDigitalChange = onJoystickDigitalChange,
+                )
                 Overlay.NONE -> {}
             }
         }
