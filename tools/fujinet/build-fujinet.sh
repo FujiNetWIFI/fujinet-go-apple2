@@ -211,6 +211,28 @@ patch("build.sh", [
         '        pip install platformio || exit 1\n',
         '        pip install platformio pyyaml jinja2 || exit 1\n',
     ),
+    # Skip the PC unit tests under Android cross-compile: ctest builds the test
+    # executables for the Android target, so running them on the Linux build host
+    # fails with "cannot execute binary file" and aborts the runtime build.
+    (
+        '  # run unit tests\n'
+        '  ctest -V --progress\n'
+        '    if [ $? -ne 0 ] ; then\n'
+        '    echo "Error running unit tests. Aborting"\n'
+        '    exit 1\n'
+        '  fi\n',
+        '  # run unit tests (skipped under Android cross-compile: the test binaries\n'
+        '  # target Android and cannot run on the build host)\n'
+        '  if [ -z "${ANDROID_NDK_HOME}" ] ; then\n'
+        '    ctest -V --progress\n'
+        '    if [ $? -ne 0 ] ; then\n'
+        '      echo "Error running unit tests. Aborting"\n'
+        '      exit 1\n'
+        '    fi\n'
+        '  else\n'
+        '    echo "Skipping unit tests (Android cross-compile)."\n'
+        '  fi\n',
+    ),
 ])
 
 # --- fujinet_pc.cmake: SHARED target, mbedTLS, expat, dist ----------------

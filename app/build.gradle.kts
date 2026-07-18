@@ -124,8 +124,8 @@ android {
         applicationId = "online.fujinet.go.apple2"
         minSdk = 26
         targetSdk = 35
-        versionCode = 10 
-        versionName = "0.9.0"
+        versionCode = 11
+        versionName = "0.10.0"
         buildConfigField("String", "APPLEWIN_VERSION", "\"${appleWinVersion}\"")
         buildConfigField("String", "FUJINET_RUNTIME_VERSION", "\"${fujiNetRuntimeVersion}\"")
 

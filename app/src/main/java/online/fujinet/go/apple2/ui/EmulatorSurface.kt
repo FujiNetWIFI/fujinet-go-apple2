@@ -21,8 +21,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import online.fujinet.go.apple2.SessionController
 
 // AppleWin's libretro borderless frame buffer (560x384) presented by the host
-// (session_runtime.cpp::PresentTo) -- the Apple II's ~4:3 display.
-private const val FRAME_RATIO = 560f / 384f
+// (session_runtime.cpp::PresentTo) -- the Apple II's ~4:3 display. Internal so the
+// landscape split keyboard can size its flanks to the pillar-box margins.
+internal const val FRAME_RATIO = 560f / 384f
 
 /**
  * Hosts the Apple II video output. The native layer renders AppleWin's XRGB8888
