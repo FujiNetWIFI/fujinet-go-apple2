@@ -33,10 +33,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import online.fujinet.go.apple2.R
 import online.fujinet.go.apple2.SessionController
+import online.fujinet.go.apple2.settings.RomStore
 
 /**
  * The main app screen: the Apple II video surface, a thin control bar (toggle
@@ -50,6 +52,22 @@ fun EmulatorScreen(
     onShutdown: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val gateContext = LocalContext.current
+    var hasRoms by remember {
+        mutableStateOf(RomStore.availableMachines(gateContext).isNotEmpty())
+    }
+
+    if (!hasRoms) {
+        RomGate(
+            onImported = {
+                hasRoms = RomStore.availableMachines(gateContext).isNotEmpty()
+                if (hasRoms) session.startIfNeeded()
+            },
+            modifier = modifier,
+        )
+        return
+    }
+
     // The keyboard and joystick are mutually exclusive: at most one input overlay
     // is shown so the emulator surface keeps as much room as possible.
     var overlay by remember { mutableStateOf(Overlay.KEYBOARD) }

@@ -11,8 +11,9 @@ import java.io.File
  * Assets are produced by tools/fujinet/build-fujinet.sh:
  *   assets/fujinet/{fnconfig.ini, data/, SD/}
  *
- * Unlike fujinet-go-adam, no emulator ROMs are staged: the Apple II system ROMs
- * are compiled into libapple2core.so via AppleWin's embedded `apple2roms` target.
+ * No emulator ROM assets are staged: release builds embed no Apple firmware,
+ * and the user-imported system ROMs live in <filesDir>/applewin/roms (see
+ * settings/RomStore.kt), exported to the core as $APPLE2_ROMS_DIR.
  */
 class RuntimeInstaller(private val context: Context) {
 
@@ -21,6 +22,7 @@ class RuntimeInstaller(private val context: Context) {
         val configPath: String,
         val sdPath: String,
         val dataPath: String,
+        val romsDir: String,
     )
 
     fun install(force: Boolean = false): Paths {
@@ -35,6 +37,7 @@ class RuntimeInstaller(private val context: Context) {
             configPath = File(root, "fnconfig.ini").absolutePath,
             sdPath = File(root, "SD").absolutePath,
             dataPath = File(root, "data").absolutePath,
+            romsDir = File(context.filesDir, "applewin/roms").apply { mkdirs() }.absolutePath,
         )
     }
 

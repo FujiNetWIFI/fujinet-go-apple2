@@ -46,15 +46,65 @@ fun readAppleWinVersion(): String {
 
 val appleWinVersion = readAppleWinVersion()
 
+// Dev-only flag: -Papple2Roms=true keeps the Apple II system ROMs embedded in
+// libapple2core.so (AppleWin's upstream apple2roms target) so a local debug
+// build boots without an import step. NEVER set for a release build -- see
+// COMPLIANCE.md and the release-build guard below, which throws rather than
+// silently shipping ROMs. Default: the staging script strips them and the
+// core loads user-imported ROMs from $APPLE2_ROMS_DIR at runtime.
+val apple2Roms: Boolean = (project.findProperty("apple2Roms") as String?)?.toBoolean() ?: false
+
 // Stages the AppleWin libretro core source tree from the local checkout into
 // app/src/main/cpp-generated/applewin (see tools/applewin/build-applewin-core.sh).
 val prepareAppleWinCore by tasks.registering(Exec::class) {
     group = "build setup"
     description = "Stages the AppleWin libretro core source tree from the local checkout."
     workingDir = rootProject.projectDir
-    commandLine("bash", rootProject.file("tools/applewin/build-applewin-core.sh").absolutePath)
+    commandLine(
+        listOf("bash", rootProject.file("tools/applewin/build-applewin-core.sh").absolutePath) +
+            (if (apple2Roms) listOf("--with-roms") else emptyList())
+    )
     inputs.file(rootProject.file("tools/applewin/build-applewin-core.sh"))
+    inputs.property("apple2Roms", apple2Roms)
     outputs.dir(project.file("src/main/cpp-generated/applewin"))
+}
+
+// Strips Apple-copyrighted content from the staged FujiNet media (the
+// A3A2EMU ROM image on the boot disks, DOS 3.3 tracks on blank.do) before
+// asset merging. Idempotent and cheap, so it runs on every build.
+val sanitizeFujiNetMedia by tasks.registering(Exec::class) {
+    group = "build setup"
+    description = "Removes Apple-copyrighted files/tracks from the staged FujiNet media images."
+    workingDir = rootProject.projectDir
+    commandLine(
+        "python3", rootProject.file("tools/fujinet/sanitize-apple-media.py").absolutePath,
+        project.file("src/main/assets-generated/fujinet/data").absolutePath
+    )
+    outputs.upToDateWhen { false }
+}
+
+// Audits the merged assets + native libs for embedded ROM signatures before a
+// release build can be packaged -- makes the "release builds embed no Apple
+// firmware" claim in COMPLIANCE.md mechanical rather than aspirational.
+val verifyNoEmbeddedRoms by tasks.registering(Exec::class) {
+    group = "verification"
+    description = "Fails if Apple II ROM bytes are present in the merged release assets or libs."
+    workingDir = rootProject.projectDir
+    commandLine(
+        "python3", rootProject.file("tools/applewin/verify-no-roms.py").absolutePath,
+        "--require",
+        project.file("build/intermediates/assets/release").absolutePath,
+        project.file("build/intermediates/merged_native_libs/release").absolutePath
+    )
+    // The scan targets are merge outputs -- without this ordering the check
+    // can run against directories that don't exist yet and prove nothing.
+    mustRunAfter(
+        tasks.matching { it.name.startsWith("merge") && it.name.contains("Release") }
+    )
+}
+
+tasks.matching { it.name == "assembleRelease" || it.name == "bundleRelease" }.configureEach {
+    dependsOn(verifyNoEmbeddedRoms)
 }
 
 tasks.named("preBuild").configure {
@@ -102,6 +152,11 @@ tasks.matching { task ->
     )
 }.configureEach {
     dependsOn(prepareFujiNetRuntime)
+    dependsOn(sanitizeFujiNetMedia)
+}
+
+sanitizeFujiNetMedia.configure {
+    mustRunAfter(prepareFujiNetRuntime)
 }
 
 android {
@@ -124,8 +179,8 @@ android {
         applicationId = "online.fujinet.go.apple2"
         minSdk = 26
         targetSdk = 35
-        versionCode = 11
-        versionName = "0.10.0"
+        versionCode = 12
+        versionName = "1.0.0"
         buildConfigField("String", "APPLEWIN_VERSION", "\"${appleWinVersion}\"")
         buildConfigField("String", "FUJINET_RUNTIME_VERSION", "\"${fujiNetRuntimeVersion}\"")
 
@@ -158,10 +213,33 @@ android {
         release {
             isMinifyEnabled = false
             signingConfig = signingConfigs.findByName("release")
+            ndk { debugSymbolLevel = "FULL" }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+    }
+
+    if (apple2Roms) {
+        // -Papple2Roms is a dev-only convenience for local debug builds. A
+        // release build carrying it would ship Apple-copyrighted system
+        // ROMs -- refuse outright instead of relying on
+        // verifyNoEmbeddedRoms to catch it after the fact. Checked against
+        // the task graph (not at buildTypes{} configuration time) so this
+        // doesn't also trip on unrelated debug-only invocations such as
+        // `assembleDebug`, since Gradle configures every build type's DSL
+        // block regardless of which task is actually requested.
+        gradle.taskGraph.whenReady {
+            val releaseTaskRequested = allTasks.any { task ->
+                task.path.contains(":app:") && task.name.contains("Release")
+            }
+            if (releaseTaskRequested) {
+                throw GradleException(
+                    "-Papple2Roms=true is a dev-only flag; refusing a release build with it set. " +
+                        "See COMPLIANCE.md."
+                )
+            }
         }
     }
     compileOptions {

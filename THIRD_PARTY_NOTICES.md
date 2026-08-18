@@ -59,7 +59,9 @@ FujiNet Go Apple2 incorporates the following third-party software. See
   used, by AppleWin's common2 registry.
 
 ## Apple II system ROMs
-- The Apple II system/video/Disk ][/SmartPort firmware images are Apple
-  copyrighted firmware, compiled into `libapple2core.so` via AppleWin's embedded
-  `apple2roms` resource target. They are not freely licensed. See the ROM note
-  in [COMPLIANCE.md](./COMPLIANCE.md).
+- The Apple II system/video/Disk ][ firmware images are Apple copyrighted
+  firmware and are **not embedded in release builds** — the staging script
+  strips them from AppleWin's `apple2roms` resource target, and users import
+  their own dumps at the first-run ROM gate. Only AppleWin's own GPL firmware
+  (Hddrvr, HDC-SmartPort, spoverslip) remains embedded. See the ROM policy in
+  [COMPLIANCE.md](./COMPLIANCE.md).

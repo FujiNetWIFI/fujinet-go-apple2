@@ -9,9 +9,13 @@
 # working copy (not a pinned GitHub tarball) so unpushed changes -- including the
 # SmartPort-over-SLIP card the FujiNet link depends on -- are used as-is.
 #
-# Apple II system ROMs and the SP-over-SLIP firmware are compiled into the core
-# via AppleWin's own `apple2roms` resource target (xxd -i), so -- unlike adam,
-# which bundles ROMs as assets -- this script stages no ROM assets.
+# Apple firmware policy: the Apple II system ROMs are copyrighted, so by
+# default this script STRIPS them from AppleWin's `apple2roms` resource target
+# (and from the staged resource/ tree) -- release builds embed only the
+# GPL-safe AppleWin-authored firmware (Hddrvr/HDC-SmartPort/spoverslip). At
+# runtime the core loads user-imported ROMs from $APPLE2_ROMS_DIR instead (a
+# GetResourceData override patched in below). --with-roms (wired to
+# -Papple2Roms=true, dev debug builds only) keeps the upstream embedded set.
 #
 # The only transforms are a handful of idempotent CMake edits that let AppleWin's
 # build run as a subdirectory of the app's Android CMake project (it normally
@@ -48,6 +52,14 @@ fail() {
     exit 1
 }
 
+WITH_ROMS=0
+for arg in "$@"; do
+    case "$arg" in
+        --with-roms) WITH_ROMS=1 ;;
+        *) fail "unknown argument: $arg" ;;
+    esac
+done
+
 [[ -d "${SOURCE_DIR}" ]] || fail "AppleWin source not found at ${SOURCE_DIR} (set APPLEWIN_SRC)"
 [[ -f "${SOURCE_DIR}/source/frontends/libretro/libretro.cpp" ]] || \
     fail "libretro frontend missing under ${SOURCE_DIR} (is this the FujiNetWIFI 'linux' branch?)"
@@ -63,6 +75,8 @@ fi
 source_fingerprint() {
     {
         echo "${SOURCE_COMMIT}"
+        # Re-stage when the ROM policy flips, not only on source changes.
+        echo "with_roms=${WITH_ROMS}"
         # Re-stage when this script's staging/patch logic changes, not only when
         # the AppleWin checkout changes.
         sha256sum "${BASH_SOURCE[0]}" 2>/dev/null || true
@@ -107,11 +121,13 @@ for d in "${STAGE_DIRS[@]}"; do
 done
 
 # --- Idempotent CMake transforms for the Android subdirectory build ----------
-python3 - "${GENERATED_ROOT}" <<'PY'
+python3 - "${GENERATED_ROOT}" "${WITH_ROMS}" <<'PY'
 from pathlib import Path
+import re
 import sys
 
 root = Path(sys.argv[1])
+with_roms = sys.argv[2] == "1"
 
 def patch(rel, transforms):
     p = root / rel
@@ -291,6 +307,175 @@ patch("source/frontends/libretro/rdirectsound.cpp", [
         "                          ptr + dwAudioBytes1 / sizeof(int16_t));",
     ),
 ])
+
+# User-imported ROM override: GetResourceData consults $APPLE2_ROMS_DIR (set by
+# the app's session runtime, pointing at the app-private directory the first-run
+# ROM gate imports into) before the embedded apple2roms map. File-first so an
+# imported ROM also overrides a dev-embedded copy. Applied unconditionally --
+# harmless in --with-roms builds. The id->filename table mirrors
+# resource/CMakeLists.txt; ids come from resource/resource.h (included by
+# relative path).
+patch("source/frontends/common2/gnuframe.cpp", [
+    (
+        "#include <filesystem>\n",
+        "#include <filesystem>\n"
+        "#include <cstdlib>\n"
+        "#include <fstream>\n"
+        "#include <iterator>\n"
+        "#include <vector>\n"
+        "#include \"../../../resource/resource.h\"\n",
+    ),
+    (
+        "        const auto it = apple2roms::data.find(id);\n"
+        "        if (it == apple2roms::data.end())\n",
+        "        // [fujinet-go-apple2] User-imported ROM override; see\n"
+        "        // tools/applewin/build-applewin-core.sh. Loaded once per id into a\n"
+        "        // process-lifetime cache (callers keep the returned pointer); only\n"
+        "        // ever called from the emulator thread.\n"
+        "        static const std::map<WORD, const char *> s_romFiles = {\n"
+        "            {IDR_APPLE2_ROM, \"Apple2.rom\"},\n"
+        "            {IDR_APPLE2_PLUS_ROM, \"Apple2_Plus.rom\"},\n"
+        "            {IDR_APPLE2_JPLUS_ROM, \"Apple2_JPlus.rom\"},\n"
+        "            {IDR_APPLE2E_ROM, \"Apple2e.rom\"},\n"
+        "            {IDR_APPLE2E_ENHANCED_ROM, \"Apple2e_Enhanced.rom\"},\n"
+        "            {IDR_PRAVETS_82_ROM, \"PRAVETS82.ROM\"},\n"
+        "            {IDR_PRAVETS_8M_ROM, \"PRAVETS8M.ROM\"},\n"
+        "            {IDR_PRAVETS_8C_ROM, \"PRAVETS8C.ROM\"},\n"
+        "            {IDR_TK3000_2E_ROM, \"TK3000e.rom\"},\n"
+        "            {IDR_BASE_64A_ROM, \"Base64A.rom\"},\n"
+        "            {IDR_FREEZES_F8_ROM, \"Freezes_Non-autostart_F8_Rom.rom\"},\n"
+        "            {IDR_APPLE2_VIDEO_ROM, \"Apple2_Video.rom\"},\n"
+        "            {IDR_APPLE2_JPLUS_VIDEO_ROM, \"Apple2_JPlus_Video.rom\"},\n"
+        "            {IDR_APPLE2E_ENHANCED_VIDEO_ROM, \"Apple2e_Enhanced_Video.rom\"},\n"
+        "            {IDR_BASE64A_VIDEO_ROM, \"Base64A_German_Video.rom\"},\n"
+        "            {IDR_DISK2_13SECTOR_FW, \"DISK2-13sector.rom\"},\n"
+        "            {IDR_DISK2_16SECTOR_FW, \"DISK2.rom\"},\n"
+        "            {IDR_SSC_FW, \"SSC.rom\"},\n"
+        "            {IDR_PRINTDRVR_FW, \"Parallel.rom\"},\n"
+        "            {IDR_MOCKINGBOARD_D_FW, \"Mockingboard-D.rom\"},\n"
+        "            {IDR_MOUSEINTERFACE_FW, \"MouseInterface.rom\"},\n"
+        "            {IDR_THUNDERCLOCKPLUS_FW, \"ThunderClockPlus.rom\"},\n"
+        "            {IDR_TKCLOCK_FW, \"TKClock.rom\"},\n"
+        "            {IDB_CHARSET82, \"CHARSET82.bmp\"},\n"
+        "            {IDB_CHARSET8M, \"CHARSET8M.bmp\"},\n"
+        "            {IDB_CHARSET8C, \"CHARSET8C.bmp\"},\n"
+        "        };\n"
+        "        const char *romsDir = std::getenv(\"APPLE2_ROMS_DIR\");\n"
+        "        const auto nameIt = s_romFiles.find(id);\n"
+        "        if (romsDir && nameIt != s_romFiles.end())\n"
+        "        {\n"
+        "            static std::map<WORD, std::vector<unsigned char>> s_cache;\n"
+        "            auto cIt = s_cache.find(id);\n"
+        "            if (cIt == s_cache.end())\n"
+        "            {\n"
+        "                std::ifstream f(std::filesystem::path(romsDir) / nameIt->second, std::ios::binary);\n"
+        "                if (f)\n"
+        "                {\n"
+        "                    std::vector<unsigned char> bytes(\n"
+        "                        (std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());\n"
+        "                    if (!bytes.empty())\n"
+        "                    {\n"
+        "                        cIt = s_cache.emplace(id, std::move(bytes)).first;\n"
+        "                    }\n"
+        "                }\n"
+        "            }\n"
+        "            if (cIt != s_cache.end())\n"
+        "            {\n"
+        "                return {cIt->second.data(), static_cast<unsigned int>(cIt->second.size())};\n"
+        "            }\n"
+        "        }\n"
+        "        const auto it = apple2roms::data.find(id);\n"
+        "        if (it == apple2roms::data.end())\n",
+    ),
+])
+
+# Register slot1/slot2 core options with Empty as the default. CardManager's
+# constructor defaults are Printer (slot 1) and SSC (slot 2), whose firmware
+# (Parallel.rom / SSC.rom) is stripped from release builds -- without these
+# options forcing the slots empty, every boot would fetch the missing firmware
+# and fail the load. The Android session sets both to "Empty" via
+# nativeSetCoreOption before start (users who import those firmwares can be
+# offered the cards later).
+patch("source/frontends/libretro/retroregistry.cpp", [
+    (
+        '        {\n'
+        '            {\n'
+        '                "slot3",',
+        '        {\n'
+        '            {\n'
+        '                "slot1",\n'
+        '                "Card in Slot 1",\n'
+        '                CATEGORY_SYSTEM,\n'
+        '                {\n'
+        '                    {"Empty", CT_Empty},\n'
+        '                    {"Printer", CT_GenericPrinter},\n'
+        '                },\n'
+        '            },\n'
+        '            "Configuration\\\\Slot 1",\n'
+        '            REGVALUE_CARD_TYPE, // reset required\n'
+        '        },\n'
+        '        {\n'
+        '            {\n'
+        '                "slot2",\n'
+        '                "Card in Slot 2",\n'
+        '                CATEGORY_SYSTEM,\n'
+        '                {\n'
+        '                    {"Empty", CT_Empty},\n'
+        '                    {"SSC", CT_SSC},\n'
+        '                },\n'
+        '            },\n'
+        '            "Configuration\\\\Slot 2",\n'
+        '            REGVALUE_CARD_TYPE, // reset required\n'
+        '        },\n'
+        '        {\n'
+        '            {\n'
+        '                "slot3",',
+    ),
+])
+
+# --- Apple ROM strip (default; skipped with --with-roms) ---------------------
+# Remove every copyrighted resource from the apple2roms embed list and delete
+# the corresponding files from the staged tree, keeping only AppleWin-authored
+# GPL-safe firmware (Hddrvr/Hddrvr-v2/HDC-SmartPort/spoverslip) and non-ROM
+# assets (logo/icon/debug font). Also drop the Apple-copyrighted disk images
+# staged under bin/ (they are never packaged, but keep the tree clean).
+if not with_roms:
+    strip_ids = {
+        "IDR_DISK2_13SECTOR_FW", "IDR_DISK2_16SECTOR_FW", "IDR_SSC_FW",
+        "IDR_PRINTDRVR_FW", "IDR_MOCKINGBOARD_D_FW", "IDR_MOUSEINTERFACE_FW",
+        "IDR_THUNDERCLOCKPLUS_FW", "IDR_TKCLOCK_FW",
+        "IDR_APPLE2_ROM", "IDR_APPLE2_PLUS_ROM", "IDR_APPLE2_JPLUS_ROM",
+        "IDR_APPLE2E_ROM", "IDR_APPLE2E_ENHANCED_ROM",
+        "IDR_PRAVETS_82_ROM", "IDR_PRAVETS_8M_ROM", "IDR_PRAVETS_8C_ROM",
+        "IDR_TK3000_2E_ROM", "IDR_BASE_64A_ROM", "IDR_FREEZES_F8_ROM",
+        "IDR_APPLE2_VIDEO_ROM", "IDR_APPLE2_JPLUS_VIDEO_ROM",
+        "IDR_APPLE2E_ENHANCED_VIDEO_ROM", "IDR_BASE64A_VIDEO_ROM",
+        "IDB_CHARSET82", "IDB_CHARSET8M", "IDB_CHARSET8C",
+    }
+    cml = root / "resource/CMakeLists.txt"
+    kept, removed_files = [], []
+    for line in cml.read_text().splitlines(keepends=True):
+        m = re.match(r'\s*(ID[A-Z0-9_]+)\s+"([^"]+)"', line)
+        if m and m.group(1) in strip_ids:
+            removed_files.append(m.group(2))
+            continue
+        kept.append(line)
+    if len(removed_files) != len(strip_ids):
+        missing = strip_ids - {m.group(1) for l in cml.read_text().splitlines()
+                               if (m := re.match(r'\s*(ID[A-Z0-9_]+)\s+"', l))}
+        sys.exit(f"build-applewin-core.sh: ROM strip expected {len(strip_ids)} "
+                 f"entries, removed {len(removed_files)} (unmatched: {sorted(missing)})")
+    cml.write_text("".join(kept))
+    for name in removed_files:
+        f = root / "resource" / name
+        if f.is_file():
+            f.unlink()
+    for name in ["DOS 3.3 System Master - 680-0210-A.dsk", "ProDOS_2_4_3.po"]:
+        f = root / "bin" / name
+        if f.is_file():
+            f.unlink()
+    print(f"build-applewin-core.sh: stripped {len(removed_files)} copyrighted "
+          "resources from apple2roms (release policy)")
 PY
 
 cat > "${STAMP_PATH}" <<EOF
@@ -298,6 +483,7 @@ source_dir=${SOURCE_DIR}
 source_branch=${SOURCE_BRANCH}
 source_commit=${SOURCE_COMMIT}
 source_fingerprint=${FP}
+with_roms=${WITH_ROMS}
 EOF
 
 echo "AppleWin core staged: ${GENERATED_ROOT}"

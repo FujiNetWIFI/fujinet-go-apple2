@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.0.0
+
+Google Play readiness release.
+
+### Changed
+- **Apple II system ROMs are no longer embedded in release builds.** The
+  staging script strips every copyrighted entry from AppleWin's `apple2roms`
+  resource target (keeping AppleWin's own GPL firmware), and a patched
+  `GetResourceData` loads user-imported ROMs from app-private storage
+  instead. On first run a ROM gate imports the Enhanced //e system ROM, its
+  video ROM, and the Disk ][ boot ROM (classified by size, CRC-checked with
+  a warning). Slots 1/2 are forced Empty (their default Printer/SSC firmware
+  is no longer embedded) and slot 4's Mouse option is gone for the same
+  reason; other Apple II models are disabled until their ROM sets become
+  importable. Dev builds may keep the embedded set via `-Papple2Roms=true`,
+  which release builds refuse; a `verifyNoEmbeddedRoms` byte-probe
+  additionally guards `assembleRelease`/`bundleRelease`.
+- The staged FujiNet media are sanitized before packaging: the `A3A2EMU`
+  Apple II ROM image (Apple /// emulation boot support, unused inside this
+  app) is removed from `autorun.po`/`mount-and-boot.po`, and `blank.do`'s
+  DOS 3.3 boot tracks are zeroed (it becomes a plain data-disk template).
+- Cleartext HTTP scoped to the loopback FujiNet web UI via a network
+  security config; release builds carry full native debug symbols.
+
+### Added
+- Release signing via `keystore.properties`, `tools/release-play.sh`
+  (signed AAB), privacy policy under `docs/`, and a Play submission
+  checklist.
+
 ## 0.1.0 (in progress)
 
 First working release fusing the AppleWin Apple ][ emulator and the FujiNet

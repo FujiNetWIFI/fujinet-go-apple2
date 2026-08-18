@@ -86,6 +86,7 @@ The Gradle build invokes the staging/cross-compile scripts:
 
 This is a mixed-license project — see [COMPLIANCE.md](./COMPLIANCE.md) and
 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md). AppleWin is GPLv2-or-later
-and FujiNet is GPLv3 (so the combined work is effectively GPLv3); note that the
-**Apple II system ROMs are Apple copyright**, which constrains distribution of
-any combined binary.
+and FujiNet is GPLv3 (so the combined work is effectively GPLv3). The **Apple II
+system ROMs are Apple copyright and are not embedded in release builds** —
+users import their own dumps at the first-run ROM gate (dev builds may embed
+them via `-Papple2Roms=true`, which release builds refuse).

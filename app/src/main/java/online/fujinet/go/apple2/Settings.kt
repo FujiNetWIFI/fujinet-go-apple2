@@ -30,9 +30,14 @@ val MACHINES = listOf(
     "TK3000 //e",
 )
 
-/** Cards available per slot (matches the "slotN" core-option labels). */
+/**
+ * Cards available per slot (matches the "slotN" core-option labels). Slots 1
+ * and 2 are forced Empty by SessionController (their default cards' firmware
+ * is not embedded in release builds). "Mouse" is likewise absent from slot 4:
+ * MouseInterface.rom is no longer embedded and has no import slot yet.
+ */
 val SLOT3_CARDS = listOf("Empty", "Video HD")
-val SLOT4_CARDS = listOf("Empty", "Mockingboard", "Mouse", "Phasor")
+val SLOT4_CARDS = listOf("Empty", "Mockingboard", "Phasor")
 val SLOT5_CARDS = listOf("Empty", "CP/M", "Mockingboard", "Phasor", "SAM/DAC", "FujiNet")
 val SLOT7_CARDS = listOf("Empty", "Hard Disk", "FujiNet")
 

@@ -100,7 +100,8 @@ SessionRuntime& SessionRuntime::Get() {
 void SessionRuntime::StartSession(const std::string& runtime_root,
                                   const std::string& config_path,
                                   const std::string& sd_path,
-                                  const std::string& data_path) {
+                                  const std::string& data_path,
+                                  const std::string& roms_dir) {
     std::lock_guard<std::mutex> lock(lifecycle_mutex_);
     if (running_.load()) {
         LOGW("StartSession ignored; session already running");
@@ -111,11 +112,19 @@ void SessionRuntime::StartSession(const std::string& runtime_root,
     config_path_ = config_path;
     sd_path_ = sd_path;
     data_path_ = data_path;
+    roms_dir_ = roms_dir;
 
     // AppleWin resolves its settings dir from $HOME ($HOME/.config/applewin),
     // which Android does not set. Point it at the app's writable runtime root.
     if (!runtime_root_.empty()) {
         setenv("HOME", runtime_root_.c_str(), 1);
+    }
+
+    // User-imported Apple II system ROMs: the core's GetResourceData override
+    // (patched into gnuframe.cpp by tools/applewin/build-applewin-core.sh)
+    // loads them from this directory; release builds embed no Apple firmware.
+    if (!roms_dir_.empty()) {
+        setenv("APPLE2_ROMS_DIR", roms_dir_.c_str(), 1);
     }
 
     apple2host_set_frame_sink(&frame_sink_trampoline, this);

@@ -20,10 +20,11 @@ extern "C" {
 JNIEXPORT void JNICALL
 Java_online_fujinet_go_apple2_core_EmulatorNative_nativeStartSession(
         JNIEnv* env, jobject /*thiz*/,
-        jstring runtimeRoot, jstring configPath, jstring sdPath, jstring dataPath) {
+        jstring runtimeRoot, jstring configPath, jstring sdPath, jstring dataPath,
+        jstring romsDir) {
     SessionRuntime::Get().StartSession(
             JStr(env, runtimeRoot), JStr(env, configPath),
-            JStr(env, sdPath), JStr(env, dataPath));
+            JStr(env, sdPath), JStr(env, dataPath), JStr(env, romsDir));
 }
 
 JNIEXPORT void JNICALL

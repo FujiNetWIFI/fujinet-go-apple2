@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.Surface
 import online.fujinet.go.apple2.core.EmulatorNative
 import online.fujinet.go.apple2.input.Retro
+import online.fujinet.go.apple2.settings.RomStore
 import kotlin.concurrent.thread
 
 /**
@@ -47,6 +48,15 @@ class SessionController private constructor(private val context: Context) {
         set(value) { settings.joystickDigitalEnabled = value }
 
     fun startIfNeeded() {
+        val cfg = settings.config
+        if (!RomStore.hasSystemRoms(context, cfg.machine)) {
+            // The selected machine can't boot (release builds embed no Apple
+            // firmware). Fall back to a machine whose imported ROM set is
+            // complete; with none, the ROM gate (ui/RomGate.kt) prompts
+            // import and re-calls startIfNeeded().
+            val fallback = RomStore.availableMachines(context).firstOrNull() ?: return
+            settings.config = cfg.copy(machine = fallback)
+        }
         synchronized(lock) {
             if (started) return
             started = true
@@ -70,11 +80,16 @@ class SessionController private constructor(private val context: Context) {
             // Apply machine + slot core options before the core reads them at load.
             val c = settings.config
             EmulatorNative.nativeSetCoreOption("applewin_machine", c.machine)
+            // Slots 1/2 are forced Empty: CardManager's defaults (Printer/SSC)
+            // fetch firmware that release builds no longer embed, which would
+            // fail every boot. Re-enable once those firmwares are importable.
+            EmulatorNative.nativeSetCoreOption("applewin_slot1", "Empty")
+            EmulatorNative.nativeSetCoreOption("applewin_slot2", "Empty")
             EmulatorNative.nativeSetCoreOption("applewin_slot3", c.slot3)
             EmulatorNative.nativeSetCoreOption("applewin_slot4", c.slot4)
             EmulatorNative.nativeSetCoreOption("applewin_slot5", c.slot5)
             EmulatorNative.nativeSetCoreOption("applewin_slot7", c.slot7)
-            EmulatorNative.nativeStartSession(p.runtimeRoot, p.configPath, p.sdPath, p.dataPath)
+            EmulatorNative.nativeStartSession(p.runtimeRoot, p.configPath, p.sdPath, p.dataPath, p.romsDir)
             audio.start()
         } catch (t: Throwable) {
             Log.e(TAG, "Failed to start session", t)

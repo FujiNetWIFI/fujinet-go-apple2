@@ -24,10 +24,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import online.fujinet.go.apple2.Apple2Config
 import online.fujinet.go.apple2.MACHINES
+import online.fujinet.go.apple2.settings.RomStore
 import online.fujinet.go.apple2.SLOT3_CARDS
 import online.fujinet.go.apple2.SLOT4_CARDS
 import online.fujinet.go.apple2.SLOT5_CARDS
@@ -51,6 +53,13 @@ fun SettingsDialog(
 ) {
     var draft by remember { mutableStateOf(config) }
 
+    // Only machines whose user-imported ROM set is complete are offered
+    // (release builds embed no Apple firmware; see settings/RomStore.kt).
+    val context = LocalContext.current
+    val machineOptions = remember {
+        RomStore.availableMachines(context).ifEmpty { listOf(config.machine) }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
@@ -63,7 +72,13 @@ fun SettingsDialog(
         title = { Text("Settings") },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                OptionRow("Apple II model", MACHINES, draft.machine) { draft = draft.copy(machine = it) }
+                OptionRow("Apple II model", machineOptions, draft.machine) { draft = draft.copy(machine = it) }
+                if (machineOptions.size < MACHINES.size) {
+                    Text(
+                        "Other models need their system ROMs imported first.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text("Expansion slots", style = MaterialTheme.typography.titleSmall)

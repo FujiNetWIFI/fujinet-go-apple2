@@ -23,6 +23,7 @@ object EmulatorNative {
         configPath: String,
         sdPath: String,
         dataPath: String,
+        romsDir: String,
     )
 
     external fun nativeStopSession()

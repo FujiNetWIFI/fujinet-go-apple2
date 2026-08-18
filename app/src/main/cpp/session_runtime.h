@@ -19,12 +19,15 @@ class SessionRuntime {
 public:
     static SessionRuntime& Get();
 
-    // FujiNet runtime root/config/SD/data paths (used from Phase 4; the core
-    // itself boots from embedded ROMs and needs no paths).
+    // FujiNet runtime root/config/SD/data paths, plus the app-private
+    // directory holding the user-imported Apple II system ROMs (exported as
+    // $APPLE2_ROMS_DIR for the core's GetResourceData override -- release
+    // builds embed no Apple firmware; see COMPLIANCE.md).
     void StartSession(const std::string& runtime_root,
                       const std::string& config_path,
                       const std::string& sd_path,
-                      const std::string& data_path);
+                      const std::string& data_path,
+                      const std::string& roms_dir);
     void StopSession();
     bool IsRunning() const { return running_.load(); }
 
@@ -76,4 +79,5 @@ private:
     std::string config_path_;
     std::string sd_path_;
     std::string data_path_;
+    std::string roms_dir_;
 };
