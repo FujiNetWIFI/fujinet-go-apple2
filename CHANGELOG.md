@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.1.0
+
+### Added
+- Updated the bundled FujiNet runtime, which adds calendar support: the new
+  `CALENDAR`, `GCAL` and `ICAL` network protocols let programs read Google
+  Calendar and iCalendar feeds over `N:`. Also brings in HTML parsing and
+  channel mode for `N:`, a device password with web admin management, and a
+  large round of upstream fixes.
+
+### Fixed
+- `tools/fujinet/build-fujinet.sh`: the `target_link_libraries` patch anchor
+  now matches upstream's link line, which gained `gumbo_fn` (the vendored
+  pure-C HTML5 parser behind FNSGML). The library is built in-tree with no
+  external dependencies, so it needed nothing beyond joining the Android
+  link line.
+
 ## 1.0.0
 
 Google Play readiness release.
