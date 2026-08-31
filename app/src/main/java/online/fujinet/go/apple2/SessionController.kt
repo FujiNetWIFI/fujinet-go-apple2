@@ -42,6 +42,10 @@ class SessionController private constructor(private val context: Context) {
         get() = settings.joystickHapticsEnabled
         set(value) { settings.joystickHapticsEnabled = value }
 
+    var interfaceHapticsEnabled: Boolean
+        get() = settings.interfaceHapticsEnabled
+        set(value) { settings.interfaceHapticsEnabled = value }
+
     /** Digital (snap-to-extreme) vs analog joystick mode; persisted, no restart. */
     var joystickDigitalEnabled: Boolean
         get() = settings.joystickDigitalEnabled

@@ -46,9 +46,11 @@ fun SettingsDialog(
     config: Apple2Config,
     keyboardHaptics: Boolean,
     joystickHaptics: Boolean,
+    interfaceHaptics: Boolean,
     onApply: (Apple2Config) -> Unit,
     onKeyboardHapticsChange: (Boolean) -> Unit,
     onJoystickHapticsChange: (Boolean) -> Unit,
+    onInterfaceHapticsChange: (Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var draft by remember { mutableStateOf(config) }
@@ -60,15 +62,20 @@ fun SettingsDialog(
         RomStore.availableMachines(context).ifEmpty { listOf(config.machine) }
     }
 
+    // Re-provided from the live value so switching Interface haptics off goes
+    // quiet on the very next tap in this dialog.
+    ProvideUiHaptics(enabled = interfaceHaptics) {
+    val blip = LocalUiHaptic.current
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = {
+                blip()
                 if (draft != config) onApply(draft)
                 onDismiss()
             }) { Text("Apply") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = { blip(); onDismiss() }) { Text("Cancel") } },
         title = { Text("Settings") },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
@@ -94,9 +101,11 @@ fun SettingsDialog(
                 // rather than going through the draft/Apply path the machine options use.
                 ToggleRow("Keyboard haptics", keyboardHaptics, onKeyboardHapticsChange)
                 ToggleRow("Joystick haptics", joystickHaptics, onJoystickHapticsChange)
+                ToggleRow("Interface haptics", interfaceHaptics, onInterfaceHapticsChange)
             }
         },
     )
+    }
 }
 
 @Composable
@@ -111,7 +120,8 @@ private fun ToggleRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium)
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        val blip = LocalUiHaptic.current
+        Switch(checked = checked, onCheckedChange = { blip(); onCheckedChange(it) })
     }
 }
 
@@ -123,6 +133,7 @@ private fun OptionRow(
     onSelect: (String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val blip = LocalUiHaptic.current
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -130,14 +141,14 @@ private fun OptionRow(
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium)
         Box {
-            OutlinedButton(onClick = { expanded = true }) {
+            OutlinedButton(onClick = { blip(); expanded = true }) {
                 Text(selected, textAlign = TextAlign.End)
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 options.forEach { opt ->
                     DropdownMenuItem(
                         text = { Text(opt) },
-                        onClick = { onSelect(opt); expanded = false },
+                        onClick = { blip(); onSelect(opt); expanded = false },
                     )
                 }
             }

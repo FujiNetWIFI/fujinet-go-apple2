@@ -58,13 +58,15 @@ fun EmulatorScreen(
     }
 
     if (!hasRoms) {
-        RomGate(
-            onImported = {
-                hasRoms = RomStore.availableMachines(gateContext).isNotEmpty()
-                if (hasRoms) session.startIfNeeded()
-            },
-            modifier = modifier,
-        )
+        ProvideUiHaptics(enabled = session.interfaceHapticsEnabled) {
+            RomGate(
+                onImported = {
+                    hasRoms = RomStore.availableMachines(gateContext).isNotEmpty()
+                    if (hasRoms) session.startIfNeeded()
+                },
+                modifier = modifier,
+            )
+        }
         return
     }
 
@@ -74,6 +76,7 @@ fun EmulatorScreen(
     var showSettings by remember { mutableStateOf(false) }
     var keyboardHaptics by remember { mutableStateOf(session.keyboardHapticsEnabled) }
     var joystickHaptics by remember { mutableStateOf(session.joystickHapticsEnabled) }
+    var interfaceHaptics by remember { mutableStateOf(session.interfaceHapticsEnabled) }
     var joystickDigital by remember { mutableStateOf(session.joystickDigitalEnabled) }
     val onJoystickDigitalChange: (Boolean) -> Unit = { joystickDigital = it; session.joystickDigitalEnabled = it }
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -83,13 +86,16 @@ fun EmulatorScreen(
             config = session.config,
             keyboardHaptics = keyboardHaptics,
             joystickHaptics = joystickHaptics,
+            interfaceHaptics = interfaceHaptics,
             onApply = { session.applyConfig(it) },
             onKeyboardHapticsChange = { keyboardHaptics = it; session.keyboardHapticsEnabled = it },
             onJoystickHapticsChange = { joystickHaptics = it; session.joystickHapticsEnabled = it },
+            onInterfaceHapticsChange = { interfaceHaptics = it; session.interfaceHapticsEnabled = it },
             onDismiss = { showSettings = false },
         )
     }
 
+    ProvideUiHaptics(enabled = interfaceHaptics) {
     Column(modifier = modifier.fillMaxSize()) {
         ControlBar(
             keyboardActive = overlay == Overlay.KEYBOARD,
@@ -157,6 +163,7 @@ fun EmulatorScreen(
             }
         }
     }
+    }
 }
 
 private enum class Overlay { NONE, KEYBOARD, JOYSTICK }
@@ -192,8 +199,9 @@ private fun ControlBar(
  */
 @Composable
 private fun FujiNetBarButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val blip = LocalUiHaptic.current
     TextButton(
-        onClick = onClick,
+        onClick = { blip(); onClick() },
         modifier = modifier,
         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
     ) {
@@ -214,8 +222,9 @@ private fun BarButton(
     active: Boolean = false,
     onClick: () -> Unit,
 ) {
+    val blip = LocalUiHaptic.current
     TextButton(
-        onClick = onClick,
+        onClick = { blip(); onClick() },
         modifier = modifier,
         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
     ) {

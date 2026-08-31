@@ -95,12 +95,13 @@ fun JoystickModeToggle(
 
 @Composable
 private fun ModeSegment(label: String, selected: Boolean, onClick: () -> Unit) {
+    val blip = LocalUiHaptic.current
     Text(
         text = label,
         style = MaterialTheme.typography.labelMedium,
         color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
         modifier = Modifier
-            .clickable(onClick = onClick)
+            .clickable { blip(); onClick() }
             .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
             .padding(horizontal = 14.dp, vertical = 6.dp),
     )

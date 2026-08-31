@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.1.1
+
+### Added
+- **Every on-screen control now answers with a tactile blip.** Until now only
+  the emulated machine's own controls -- the Apple II keyboard, the joystick
+  and the paddle buttons -- pulsed under a fingertip, while the app's own
+  controls said nothing back. The toolbar buttons, everything in Settings (both
+  haptics switches, the model and slot pickers, Apply and Cancel), the
+  Analog/Digital joystick toggle and the first-run ROM-import gate now give the
+  same short confirmation.
+- **A third haptics switch, "Interface haptics", in Settings.** It governs the
+  app's own controls only, so the toolbar and the dialogs can be silenced
+  without giving up the pulse under the keyboard and the joystick, or the other
+  way round. It is on by default, and its pulse is deliberately lighter than a
+  keypress: tapping Settings is incidental, pressing a key is the point.
+
 ## 1.1.0
 
 ### Added

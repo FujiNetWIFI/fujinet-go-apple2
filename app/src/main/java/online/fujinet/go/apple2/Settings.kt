@@ -56,6 +56,11 @@ class SettingsStore(context: Context) {
     var joystickHapticsEnabled: Boolean
         get() = prefs.getBoolean(KEY_JOYSTICK_HAPTICS, true)
         set(value) { prefs.edit().putBoolean(KEY_JOYSTICK_HAPTICS, value).apply() }
+    /** The app's own controls (toolbar, Settings, the ROM gate), kept separate
+     * from the keyboard and joystick pulses so each can be silenced alone. */
+    var interfaceHapticsEnabled: Boolean
+        get() = prefs.getBoolean(KEY_INTERFACE_HAPTICS, true)
+        set(value) { prefs.edit().putBoolean(KEY_INTERFACE_HAPTICS, value).apply() }
 
     /**
      * Digital joystick mode: any tap inside the pad snaps the stick to the
@@ -92,6 +97,7 @@ class SettingsStore(context: Context) {
         const val KEY_SLOT7 = "slot7"
         const val KEY_KEYBOARD_HAPTICS = "keyboardHaptics"
         const val KEY_JOYSTICK_HAPTICS = "joystickHaptics"
+        const val KEY_INTERFACE_HAPTICS = "interfaceHaptics"
         const val KEY_JOYSTICK_DIGITAL = "joystickDigital"
     }
 }
